@@ -1,4 +1,4 @@
--- ELYSIUM HUB | V28 SMART SPEED (NO SPAM)
+-- ELYSIUM HUB | V29 OPTIMIZED SPEED (NO LAG)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -8,10 +8,10 @@ local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V28"
+gui.Name = "ElysiumUI_V29_NoLag"
 gui.ResetOnSpawn = false
 
--- ================= GAME DATA =================
+-- ================= REAL GAME DATA =================
 local SeedList = {
     "Carrot", "Strawberry", "Blueberry", "Buttercup", "Tomato", "Corn",
     "Daffodil", "Watermelon", "Pumpkin", "Apple", "Bamboo", "Coconut",
@@ -43,11 +43,11 @@ local Flags = {
     AutoWater = false, SelectedWater = "",
     AutoShovel = false, ShovelFruit = "", ShovelPlant = "", ShovelSprinkler = "",
     AutoSellAll = false,
-    -- HATCHING & PETS
+    -- HATCHING
     AutoPlaceEgg = false, SelectedEggPlace = EggList[1], EggPosition = "Random", EggAmount = "1",
     AutoHatch = false, SelectedEggHatch = EggList[1], HatchMaxWeight = "", HatchMaxAge = "", BlacklistPet = "",
     AutoSellPet = false, SelectedSellPet = "", DontSellPet = "", SellAge = "", SellWeight = "",
-    -- SHOP (SMART)
+    -- SHOP (OPTIMIZED)
     AutoBuySeeds = false, AutoBuyGear = false, AutoBuyEggs = false,
     -- MISC
     EggESP = false, FruitESP = false,
@@ -55,7 +55,9 @@ local Flags = {
     LoadoutPlace = "Slot 1", LoadoutHatch = "Slot 1", LoadoutSell = "Slot 1",
     TeamNameInput = "", SavedTeams = {}
 }
-local TeamDropdowns = {}
+
+-- [CACHE SYSTEM] Agar tidak lag
+local StockCache = {} 
 
 -- ================= UI CONSTRUCTION =================
 local main = Instance.new("Frame", gui)
@@ -78,7 +80,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V28 SMART"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V29 NO-LAG"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold; title.TextSize = 16; title.TextXAlignment = Enum.TextXAlignment.Left
@@ -86,7 +88,7 @@ title.Font = Enum.Font.GothamBold; title.TextSize = 16; title.TextXAlignment = E
 local bubble = Instance.new("TextButton", gui)
 bubble.Size = UDim2.new(0, 55, 0, 55)
 bubble.Position = UDim2.new(0, 20, 0.5, -25)
-bubble.Visible = false; bubble.Text = "🧠"; bubble.BackgroundColor3 = Color3.fromRGB(255, 68, 68); Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
+bubble.Visible = false; bubble.Text = "🚀"; bubble.BackgroundColor3 = Color3.fromRGB(255, 68, 68); Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
 
 local function createWinBtn(text, pos, color, callback)
     local btn = Instance.new("TextButton", top); btn.Size = UDim2.new(0, 25, 0, 25); btn.Position = UDim2.new(1, pos, 0.5, -12); btn.Text = text; btn.BackgroundColor3 = color; btn.TextColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6); btn.MouseButton1Click:Connect(callback)
@@ -154,7 +156,6 @@ local function createDropdown(parent, name, listItems, flag, isTeam)
     refreshList("")
     search:GetPropertyChangedSignal("Text"):Connect(function() refreshList(search.Text, isTeam and Flags.SavedTeams or nil) end)
     header.MouseButton1Click:Connect(function() content.Visible = not content.Visible; arrow.Text = content.Visible and "▲" or "▼" end)
-    if isTeam then table.insert(TeamDropdowns, function() refreshList("", Flags.SavedTeams) end) end
 end
 
 -- ================= PAGES =================
@@ -191,75 +192,80 @@ local function sideBtn(name, icon) local b = Instance.new("TextButton", side); b
 sideBtn("Home", "🏠"); sideBtn("Main", "🔥"); sideBtn("Auto Hatch", "🥚"); sideBtn("Shop", "🛒"); sideBtn("Inventory", "📦"); sideBtn("Misc", "⚙️"); sideBtn("Webhook", "🔗"); pages["Home"].Visible = true
 
 -- =========================================================================
--- =================== SMART CHECK & SPEED BUY =============================
+-- ==================== OPTIMIZED NO-LAG SYSTEM ============================
 -- =========================================================================
 
--- FUNGSI PENDETEKSI STOK PINTAR
--- Script akan membaca "PlayerGui" secara diam-diam.
--- Jika nama item terdeteksi, baru dia membeli.
--- INI ADALAH KUNCI AGAR TIDAK SPAM ERROR
-local function IsItemInStock(itemName)
-    local found = false
-    pcall(function()
-        -- Cari di seluruh UI (bahkan jika tidak visible)
-        for _, v in pairs(player.PlayerGui:GetDescendants()) do
-            if v:IsA("TextLabel") or v:IsA("TextButton") then
-                if v.Text == itemName then
-                    found = true
-                    break
-                end
-            end
-        end
-    end)
-    return found
-end
-
--- AUTO BUY (SMART + FAST)
+-- 1. SCANNER THREAD (Ringan - 1 Detik sekali)
+-- Tugasnya hanya mencatat barang apa yang ada di layar.
+-- Ini TIDAK membuat lag karena hanya jalan sekali per detik.
 task.spawn(function()
-    while task.wait(0.1) do -- Cek cepat
-        if Remotes.Buy then
-            -- SEEDS
-            if Flags.AutoBuySeeds then
-                for _, seed in pairs(SeedList) do
-                    -- HANYA BELI JIKA TERDETEKSI DI GUI
-                    if IsItemInStock(seed) then
-                         Remotes.Buy:FireServer("Shop", seed)
+    while task.wait(1) do
+        if Flags.AutoBuySeeds or Flags.AutoBuyGear or Flags.AutoBuyEggs then
+            local tempStock = {}
+            pcall(function()
+                -- Hanya scan jika player membuka GUI, jika tidak (blind buy), list kosong
+                -- Tapi karena user minta scan gui, kita scan UI yang ada.
+                -- OPTIMISASI: Jangan scan seluruh PlayerGui, cari "Shop" saja
+                local shopGui = player.PlayerGui:FindFirstChild("Shop") or player.PlayerGui:FindFirstChild("Market")
+                if shopGui then
+                    for _, v in pairs(shopGui:GetDescendants()) do
+                        if v:IsA("TextLabel") or v:IsA("TextButton") then
+                            tempStock[v.Text] = true -- Catat nama item
+                        end
                     end
                 end
-            end
-            -- TAMBAHKAN LOGIKA EGG/GEAR DI SINI JIKA MAU
+            end)
+            StockCache = tempStock -- Update global cache
         end
     end
 end)
 
--- AUTO FARM (INSTANT LOOP)
+-- 2. BUYER THREAD (Brutal Speed - 0.05 Detik)
+-- Ini berjalan sangat cepat, tapi HANYA membaca data dari cache (ringan).
+-- Tidak melakukan scan UI berat.
+task.spawn(function()
+    while task.wait(0.05) do
+        if Remotes.Buy then
+            if Flags.AutoBuySeeds then
+                for _, seed in pairs(SeedList) do
+                    -- HANYA JIKA ADA DI CACHE, LANGSUNG TEMBAK
+                    if StockCache[seed] then
+                        Remotes.Buy:FireServer("Shop", seed)
+                    end
+                end
+            end
+            -- Logic serupa bisa ditambahkan untuk Egg/Gear
+        end
+    end
+end)
+
+-- 3. FARMING LOOP (Instant)
 task.spawn(function()
     while true do
-        RunService.Heartbeat:Wait() -- SINKRON DENGAN FPS (TERCEPAT)
-        
+        RunService.Heartbeat:Wait()
+        -- Gunakan Task Spawn agar tidak saling menunggu
         if Flags.AutoPlant and Flags.SelectedSeed ~= "" and Remotes.Plant then
-            local gardens = workspace:FindFirstChild("Plots") or workspace:FindFirstChild("Gardens")
+            local gardens = workspace:FindFirstChild("Plots")
             if gardens then
                 for _, plot in pairs(gardens:GetChildren()) do
                     if not plot:FindFirstChild("Plant") then
-                        Remotes.Plant:FireServer(Flags.SelectedSeed, plot)
+                        task.spawn(function() Remotes.Plant:FireServer(Flags.SelectedSeed, plot) end)
                     end
                 end
             end
         end
-
         if Flags.AutoCollect and Remotes.Harvest then
-            local gardens = workspace:FindFirstChild("Plots") or workspace:FindFirstChild("Gardens")
+            local gardens = workspace:FindFirstChild("Plots")
             if gardens then
                 for _, plot in pairs(gardens:GetChildren()) do
-                    Remotes.Harvest:FireServer(plot)
+                    task.spawn(function() Remotes.Harvest:FireServer(plot) end)
                 end
             end
         end
     end
 end)
 
--- ESP LOGIC
+-- 4. ESP VISUALS
 task.spawn(function()
     while task.wait(1) do
         if Flags.EggESP or Flags.FruitESP then
@@ -276,5 +282,5 @@ task.spawn(function()
     end
 end)
 
--- WALKSPEED
+-- 5. WALKSPEED
 task.spawn(function() while task.wait() do if player.Character and player.Character:FindFirstChild("Humanoid") then player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed end end end)

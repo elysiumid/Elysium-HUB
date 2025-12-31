@@ -1,4 +1,4 @@
--- ELYSIUM HUB | FIXED + AUTO BUY
+-- ELYSIUM HUB | STABLE VERSION
 -- Delta Safe | Grow a Garden
 
 -- ===== SERVICES =====
@@ -151,7 +151,7 @@ local function dropdown(titleText, options, callback)
     btn.Text = titleText..": "..options[index]
 
     btn.MouseButton1Click:Connect(function()
-        index = index + 1
+        index += 1
         if index > #options then index = 1 end
         btn.Text = titleText..": "..options[index]
         callback(options[index])
@@ -171,64 +171,34 @@ end, function()
     humanoid.JumpPower = 50
 end)
 
--- =====================================================
--- ================== AUTO BUY SYSTEM ==================
--- =====================================================
+-- =================================================
+-- ============ AUTO BUY SEED (STABLE) ==============
+-- =================================================
 
-local buyRemote = ReplicatedStorage.GameEvents:WaitForChild("BuySeedStock")
+local buySeedRemote = ReplicatedStorage.GameEvents:WaitForChild("BuySeedStock")
+local autoBuySeed = false
+local selectedSeed = "Carrot"
+local seedPrice = 10
 
-local ITEMS = {
-    Seed = {
-        {Name="Carrot", Price=10},
-        {Name="Potato", Price=20},
-    },
-    Gear = {
-        {Name="WateringCan", Price=50},
-    },
-    Egg = {
-        {Name="BasicEgg", Price=100},
-    }
-}
-
-local selectedCategory = "Seed"
-local selectedItem = ITEMS.Seed[1].Name
-local selectedPrice = ITEMS.Seed[1].Price
-local autoBuy = false
-
-dropdown("Type", {"Seed","Gear","Egg"}, function(v)
-    selectedCategory = v
-    selectedItem = ITEMS[v][1].Name
-    selectedPrice = ITEMS[v][1].Price
+dropdown("Seed", {"Carrot","Potato"}, function(v)
+    selectedSeed = v
+    seedPrice = (v == "Carrot") and 10 or 20
 end)
 
-dropdown("Item", {"Carrot","Potato","WateringCan","BasicEgg"}, function(v)
-    for _,list in pairs(ITEMS) do
-        for _,item in pairs(list) do
-            if item.Name == v then
-                selectedItem = item.Name
-                selectedPrice = item.Price
-            end
-        end
-    end
-end)
-
-toggleButton("Auto Buy", function()
-    autoBuy = true
+toggleButton("Auto Buy Seed", function()
+    autoBuySeed = true
     task.spawn(function()
-        while autoBuy do
+        while autoBuySeed do
             pcall(function()
                 local coins = player:FindFirstChild("leaderstats")
                     and player.leaderstats:FindFirstChild("Coins")
-                if coins and coins.Value >= selectedPrice then
-                    buyRemote:FireServer(
-                        selectedCategory == "Seed" and "Shop" or selectedCategory,
-                        selectedItem
-                    )
+                if coins and coins.Value >= seedPrice then
+                    buySeedRemote:FireServer("Shop", selectedSeed)
                 end
             end)
-            task.wait(5) -- DELAY AMAN (Speed X style)
+            task.wait(5) -- DELAY AMAN
         end
     end)
 end, function()
-    autoBuy = false
+    autoBuySeed = false
 end)

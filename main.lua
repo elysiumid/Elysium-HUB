@@ -1,13 +1,14 @@
--- ELYSIUM HUB | V26 SMART DATA (NO UI NEEDED)
+-- ELYSIUM HUB | V27 (NAT HUB / SPEED HUB MODE)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V26"
+gui.Name = "ElysiumUI_V27_Speed"
 gui.ResetOnSpawn = false
 
 -- ================= REAL GAME DATA =================
@@ -24,12 +25,14 @@ local PetList = {"Cat", "Dog", "Bunny", "Bear", "Dragon", "Slime", "Titan"}
 local Slots = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"}
 
 -- ================= CONFIGURATION =================
+local GameEvents = ReplicatedStorage:WaitForChild("GameEvents")
 local Remotes = {
-    Buy = ReplicatedStorage:WaitForChild("GameEvents"):WaitForChild("BuySeedStock"),
-    Plant = ReplicatedStorage.GameEvents:FindFirstChild("PlantSeed") or ReplicatedStorage.GameEvents:FindFirstChild("PlaceItem"),
-    Harvest = ReplicatedStorage.GameEvents:FindFirstChild("HarvestPlant") or ReplicatedStorage.GameEvents:FindFirstChild("Collect"),
-    Water = ReplicatedStorage.GameEvents:FindFirstChild("WaterPlant"),
-    Sell = ReplicatedStorage.GameEvents:FindFirstChild("SellItems")
+    Buy = GameEvents:WaitForChild("BuySeedStock"),
+    Plant = GameEvents:FindFirstChild("PlantSeed") or GameEvents:FindFirstChild("PlaceItem"),
+    Harvest = GameEvents:FindFirstChild("HarvestPlant") or GameEvents:FindFirstChild("Collect"),
+    Water = GameEvents:FindFirstChild("WaterPlant"),
+    Sell = GameEvents:FindFirstChild("SellItems"),
+    Equip = GameEvents:FindFirstChild("EquipPet")
 }
 
 local Flags = {
@@ -44,9 +47,9 @@ local Flags = {
     AutoPlaceEgg = false, SelectedEggPlace = EggList[1], EggPosition = "Random", EggAmount = "1",
     AutoHatch = false, SelectedEggHatch = EggList[1], HatchMaxWeight = "", HatchMaxAge = "", BlacklistPet = "",
     AutoSellPet = false, SelectedSellPet = "", DontSellPet = "", SellAge = "", SellWeight = "",
-    -- SHOP (SMART CYCLE)
+    -- SHOP (BRUTAL MODE)
     AutoBuySeeds = false, AutoBuyGear = false, AutoBuyEggs = false,
-    -- MISC
+    -- MISC (ESP FIXED)
     EggESP = false, FruitESP = false,
     -- TEAMS
     LoadoutPlace = "Slot 1", LoadoutHatch = "Slot 1", LoadoutSell = "Slot 1",
@@ -75,7 +78,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V26 NO-UI MODE"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V27 SPEED"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold; title.TextSize = 16; title.TextXAlignment = Enum.TextXAlignment.Left
@@ -83,7 +86,7 @@ title.Font = Enum.Font.GothamBold; title.TextSize = 16; title.TextXAlignment = E
 local bubble = Instance.new("TextButton", gui)
 bubble.Size = UDim2.new(0, 55, 0, 55)
 bubble.Position = UDim2.new(0, 20, 0.5, -25)
-bubble.Visible = false; bubble.Text = "💎"; bubble.BackgroundColor3 = Color3.fromRGB(20, 20, 25); Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
+bubble.Visible = false; bubble.Text = "⚡"; bubble.BackgroundColor3 = Color3.fromRGB(255, 68, 68); Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
 
 local function createWinBtn(text, pos, color, callback)
     local btn = Instance.new("TextButton", top); btn.Size = UDim2.new(0, 25, 0, 25); btn.Position = UDim2.new(1, pos, 0.5, -12); btn.Text = text; btn.BackgroundColor3 = color; btn.TextColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6); btn.MouseButton1Click:Connect(callback)
@@ -99,7 +102,7 @@ local function createPage(name)
     local p = Instance.new("ScrollingFrame", container); p.Size = UDim2.new(1, 0, 1, 0); p.BackgroundTransparency = 1; p.Visible = false; p.ScrollBarThickness = 2; p.AutomaticCanvasSize = Enum.AutomaticSize.Y; Instance.new("UIListLayout", p).Padding = UDim.new(0, 6); pages[name] = p; return p
 end
 
--- ================= UI HELPERS (Shortened) =================
+-- ================= UI HELPERS =================
 local function createSection(parent, name, defaultVisible)
     local sectionContainer = Instance.new("Frame", parent); sectionContainer.Size = UDim2.new(0.98, 0, 0, 0); sectionContainer.AutomaticSize = Enum.AutomaticSize.Y; sectionContainer.BackgroundTransparency = 1
     local f = Instance.new("Frame", sectionContainer); f.Size = UDim2.new(1, 0, 0, 35); f.BackgroundColor3 = Color3.fromRGB(255, 68, 68); f.BackgroundTransparency = 0.65; Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
@@ -129,7 +132,7 @@ local function createRow(parent, text, type, flag, options)
     end
 end
 
-local function createDropdown(parent, name, listItems, flag)
+local function createDropdown(parent, name, listItems, flag, isTeam)
     local container = Instance.new("Frame", parent); container.Size = UDim2.new(0.98, 0, 0, 35); container.AutomaticSize = Enum.AutomaticSize.Y; container.BackgroundTransparency = 1
     local header = Instance.new("TextButton", container); header.Size = UDim2.new(1, 0, 0, 35); header.BackgroundColor3 = Color3.fromRGB(35, 35, 45); header.BackgroundTransparency = 0.5; header.Text = ""; Instance.new("UICorner", header).CornerRadius = UDim.new(0, 6)
     local lbl = Instance.new("TextLabel", header); lbl.Size = UDim2.new(0.5, 0, 1, 0); lbl.Position = UDim2.new(0, 12, 0, 0); lbl.Text = name; lbl.TextColor3 = Color3.fromRGB(210,210,210); lbl.Font = Enum.Font.Gotham; lbl.TextXAlignment = Enum.TextXAlignment.Left; lbl.BackgroundTransparency = 1
@@ -138,9 +141,10 @@ local function createDropdown(parent, name, listItems, flag)
     local content = Instance.new("Frame", container); content.Size = UDim2.new(1, 0, 0, 150); content.Position = UDim2.new(0, 0, 0, 40); content.BackgroundColor3 = Color3.fromRGB(25, 25, 30); content.Visible = false; Instance.new("UICorner", content)
     local search = Instance.new("TextBox", content); search.Size = UDim2.new(1, -10, 0, 25); search.Position = UDim2.new(0, 5, 0, 5); search.PlaceholderText = "Search..."; search.BackgroundColor3 = Color3.fromRGB(40, 40, 50); search.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", search)
     local scroll = Instance.new("ScrollingFrame", content); scroll.Size = UDim2.new(1, -10, 1, -35); scroll.Position = UDim2.new(0, 5, 0, 35); scroll.BackgroundTransparency = 1; scroll.ScrollBarThickness = 2; local listLayout = Instance.new("UIListLayout", scroll); listLayout.Padding = UDim.new(0, 2)
-    local function refreshList(filter)
+    local function refreshList(filter, items)
         for _, v in pairs(scroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-        for _, item in pairs(listItems) do
+        local targetList = items or listItems
+        for _, item in pairs(targetList) do
             if filter == "" or string.find(string.lower(item), string.lower(filter)) then
                 local b = Instance.new("TextButton", scroll); b.Size = UDim2.new(1, 0, 0, 25); b.BackgroundTransparency = 1; b.Text = item; b.TextColor3 = Color3.new(0.8, 0.8, 0.8); b.Font = Enum.Font.Gotham
                 b.MouseButton1Click:Connect(function() Flags[flag] = item; selectedLbl.Text = item; content.Visible = false end)
@@ -148,11 +152,12 @@ local function createDropdown(parent, name, listItems, flag)
         end
     end
     refreshList("")
-    search:GetPropertyChangedSignal("Text"):Connect(function() refreshList(search.Text) end)
+    search:GetPropertyChangedSignal("Text"):Connect(function() refreshList(search.Text, isTeam and Flags.SavedTeams or nil) end)
     header.MouseButton1Click:Connect(function() content.Visible = not content.Visible; arrow.Text = content.Visible and "▲" or "▼" end)
+    if isTeam then table.insert(TeamDropdowns, function() refreshList("", Flags.SavedTeams) end) end
 end
 
--- ================= PAGES & LOGIC =================
+-- ================= PAGES =================
 local homePage = createPage("Home"); local mainPage = createPage("Main"); local hatchPage = createPage("Auto Hatch"); local shopPage = createPage("Shop"); local invPage = createPage("Inventory"); local miscPage = createPage("Misc"); local webhookPage = createPage("Webhook")
 
 -- HOME
@@ -169,6 +174,7 @@ local sellS = createSection(mainPage, "Auto Sell Plant", false); createRow(sellS
 
 -- HATCH
 local loadoutS = createSection(hatchPage, "Auto Pet Loadout", true); createRow(loadoutS, "Place", "Cycle", "LoadoutPlace", Slots); createRow(loadoutS, "Hatch", "Cycle", "LoadoutHatch", Slots); createRow(loadoutS, "Sell", "Cycle", "LoadoutSell", Slots)
+local teamMakeS = createSection(hatchPage, "Pet Team Manager", false); createRow(teamMakeS, "Team Name", "Input", "TeamNameInput", {"My Team 1"}); createRow(teamMakeS, "Save Current Team", "Button", nil, {"SAVE TEAM", function() if Flags.TeamNameInput ~= "" then table.insert(Flags.SavedTeams, Flags.TeamNameInput); for _, func in pairs(TeamDropdowns) do func() end end end}); createDropdown(teamMakeS, "Select Team List", Flags.SavedTeams, "SelectedTeamSpawn", true); createRow(teamMakeS, "Action", "Button", nil, {"SPAWN TEAM", function() if Remotes.Equip then Remotes.Equip:FireServer(Flags.SelectedTeamSpawn) end end})
 local placeEggS = createSection(hatchPage, "Auto Place Egg", false); createDropdown(placeEggS, "Select Egg", EggList, "SelectedEggPlace"); createRow(placeEggS, "Position", "Cycle", "EggPosition", {"Random", "Good Position"}); createRow(placeEggS, "Amount", "Input", "EggAmount", {"Amount..."}); createRow(placeEggS, "Enable Place Egg", "Toggle", "AutoPlaceEgg")
 local hatchEggS = createSection(hatchPage, "Auto Hatch Egg", false); createDropdown(hatchEggS, "Select Egg", EggList, "SelectedEggHatch"); createRow(hatchEggS, "Don't Hatch", "DualInput", {"HatchMaxWeight", "HatchMaxAge"}, {"KG", "Age"}); createDropdown(hatchEggS, "Blacklist Pet", PetList, "BlacklistPet"); createRow(hatchEggS, "Enable Auto Hatch", "Toggle", "AutoHatch")
 local sellPetS = createSection(hatchPage, "Auto Sell Pet", false); createDropdown(sellPetS, "Select Pet to Sell", PetList, "SelectedSellPet"); createDropdown(sellPetS, "Don't Sell Pet", PetList, "DontSellPet"); createRow(sellPetS, "Threshold", "DualInput", {"SellWeight", "SellAge"}, {"KG", "Age"}); createRow(sellPetS, "Enable Sell Pet", "Toggle", "AutoSellPet")
@@ -176,57 +182,89 @@ local sellPetS = createSection(hatchPage, "Auto Sell Pet", false); createDropdow
 -- SHOP
 local shopS = createSection(shopPage, "Shop Automation", true); createRow(shopS, "Auto Buy All Seeds", "Toggle", "AutoBuySeeds"); createRow(shopS, "Auto Buy All Gear", "Toggle", "AutoBuyGear"); createRow(shopS, "Auto Buy All Eggs", "Toggle", "AutoBuyEggs")
 
--- MISC (STOCK FINDER)
-local miscS = createSection(miscPage, "Stock Finder Tool", true)
-createRow(miscS, "Click to Find Stock Path", "Button", nil, {"PRINT STOCK PATH", function()
-    print("--- SEARCHING REPLICATED STORAGE FOR STOCK DATA ---")
-    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
-        if v.Name == "Carrot" or v.Name == "Tomato" then
-            print("FOUND POSSIBLE STOCK: ", v:GetFullName())
-        end
-    end
-    print("--- END SEARCH ---")
-end})
+-- MISC (ESP RESTORED)
+local espS = createSection(miscPage, "ESP Visuals", true)
+createRow(espS, "Egg ESP", "Toggle", "EggESP")
+createRow(espS, "Fruit ESP", "Toggle", "FruitESP")
 
 local function sideBtn(name, icon) local b = Instance.new("TextButton", side); b.Size = UDim2.new(1, 0, 0, 40); b.BackgroundColor3 = Color3.fromRGB(25, 25, 35); b.BackgroundTransparency = 0.5; b.Text = "  " .. icon .. "  " .. name; b.TextColor3 = Color3.new(1, 1, 1); b.Font = Enum.Font.GothamBold; b.TextSize = 12; b.TextXAlignment = Enum.TextXAlignment.Left; Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8); b.MouseButton1Click:Connect(function() for _, p in pairs(pages) do p.Visible = false end; pages[name].Visible = true end) end
 sideBtn("Home", "🏠"); sideBtn("Main", "🔥"); sideBtn("Auto Hatch", "🥚"); sideBtn("Shop", "🛒"); sideBtn("Inventory", "📦"); sideBtn("Misc", "⚙️"); sideBtn("Webhook", "🔗"); pages["Home"].Visible = true
 
 -- =========================================================================
--- ==================== SMART CYCLE LOGIC (NO UI) ==========================
+-- =================== BRUTAL SPEED LOGIC (ZERO DELAY) =====================
 -- =========================================================================
 
--- AUTO BUY (CYCLE METHOD)
--- Ini meloop semua item satu per satu. Jika stok ada (server side check), akan terbeli.
--- Jika stok habis, server akan ignore. Ini "membuta" tapi efektif & tidak spam.
+-- AUTO BUY (BURST MODE)
 task.spawn(function()
-    while task.wait(0.2) do -- Jeda 0.2 detik per cycle (Cukup cepat tapi aman)
-        if Flags.AutoBuySeeds and Remotes.Buy then
-            for _, seed in pairs(SeedList) do
-                -- Mencoba membeli setiap seed dalam list
-                -- Karena server yang menentukan stok, kita tidak perlu cek UI
-                Remotes.Buy:FireServer("Shop", seed)
-                task.wait(0.05) -- Delay kecil antar item agar tidak di-kick
+    while task.wait(0.1) do -- Loop sangat cepat (0.1s trigger)
+        if Remotes.Buy then
+            -- Beli SEEDS
+            if Flags.AutoBuySeeds then
+                for _, seed in pairs(SeedList) do
+                    -- Gunakan coroutine untuk menembak semua request SEKALIGUS tanpa menunggu satu-satu
+                    task.spawn(function() Remotes.Buy:FireServer("Shop", seed) end)
+                end
+            end
+            -- Beli EGGS & GEAR (Logic sama, spam list)
+            if Flags.AutoBuyEggs then
+                for _, egg in pairs(EggList) do
+                    task.spawn(function() Remotes.Buy:FireServer("Shop", egg) end)
+                end
             end
         end
     end
 end)
 
--- AUTO FARM (HYPER SPEED)
+-- AUTO FARM (HYPER LOOP)
 task.spawn(function()
-    while task.wait() do
+    while true do -- Loop tanpa henti (secepat PC kuat)
+        RunService.Heartbeat:Wait() -- Sinkron dengan frame rate (Ultra Fast)
+        
+        -- PLANT
         if Flags.AutoPlant and Flags.SelectedSeed ~= "" and Remotes.Plant then
-            local gardens = workspace:FindFirstChild("Plots")
+            local gardens = workspace:FindFirstChild("Plots") or workspace:FindFirstChild("Gardens")
             if gardens then
                 for _, plot in pairs(gardens:GetChildren()) do
-                     Remotes.Plant:FireServer(Flags.SelectedSeed, plot)
+                    if not plot:FindFirstChild("Plant") then
+                        task.spawn(function() Remotes.Plant:FireServer(Flags.SelectedSeed, plot) end)
+                    end
                 end
             end
         end
+
+        -- COLLECT
         if Flags.AutoCollect and Remotes.Harvest then
+            local gardens = workspace:FindFirstChild("Plots") or workspace:FindFirstChild("Gardens")
+            if gardens then
+                for _, plot in pairs(gardens:GetChildren()) do
+                     task.spawn(function() Remotes.Harvest:FireServer(plot) end)
+                end
+            end
+        end
+        
+        -- WATER
+        if Flags.AutoWater and Remotes.Water then
             local gardens = workspace:FindFirstChild("Plots")
             if gardens then
                 for _, plot in pairs(gardens:GetChildren()) do
-                    Remotes.Harvest:FireServer(plot)
+                    task.spawn(function() Remotes.Water:FireServer(plot) end)
+                end
+            end
+        end
+    end
+end)
+
+-- ESP LOGIC
+task.spawn(function()
+    while task.wait(1) do
+        if Flags.EggESP or Flags.FruitESP then
+            local drops = workspace:FindFirstChild("Drops")
+            if drops then
+                for _, v in pairs(drops:GetChildren()) do
+                    if not v:FindFirstChild("ESP") then
+                        local bg = Instance.new("BillboardGui", v); bg.Name="ESP"; bg.Size=UDim2.new(0,50,0,50); bg.AlwaysOnTop=true
+                        local t = Instance.new("TextLabel", bg); t.Size=UDim2.new(1,0,1,0); t.BackgroundTransparency=1; t.Text=v.Name; t.TextColor3=Color3.new(0,1,0)
+                    end
                 end
             end
         end

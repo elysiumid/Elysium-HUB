@@ -1,97 +1,97 @@
--- ELYSIUM HUB UI | SHOP AUTO-BUY EDITION
+-- ELYSIUM HUB UI | V6 ULTIMATE EDITION
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+local Character = player.Character or player.CharacterAdded:Wait()
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GameEvents = ReplicatedStorage:WaitForChild("GameEvents")
+
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI"
+gui.Name = "ElysiumUI_V6"
 gui.ResetOnSpawn = false
 
--- ================= CONFIG AUTO BUY =================
+-- ================= CONFIG / FLAGS =================
 local Flags = {
-    AutoSeeds = false,
-    AutoGear = false,
-    AutoEggs = false
+    -- Main
+    AutoPlant = false,
+    AutoCollect = false,
+    AutoSell = false,
+    AutoShovel = false,
+    AutoWater = false,
+    -- Hatch
+    AutoHatch = false,
+    -- Local Player
+    WalkSpeed = 16,
+    JumpPower = 50
 }
 
 -- ================= MAIN FRAME =================
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,550,0,350)
-main.Position = UDim2.new(0.5, -275, 0.5, -175)
-main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+main.Size = UDim2.new(0, 580, 0, 380)
+main.Position = UDim2.new(0.5, -290, 0.5, -190)
+main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 main.Active = true
 main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
-Instance.new("UIStroke", main).Color = Color3.fromRGB(45, 45, 55)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(60, 60, 255)
+stroke.Thickness = 2
 
--- TOP BAR
+-- TOP BAR (HEADER)
 local top = Instance.new("Frame", main)
-top.Size = UDim2.new(1,0,0,40)
-top.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-Instance.new("UICorner", top).CornerRadius = UDim.new(0,12)
+top.Size = UDim2.new(1, 0, 0, 45)
+top.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+Instance.new("UICorner", top)
 
 local title = Instance.new("TextLabel", top)
-title.Size = UDim2.new(1,-100,1,0)
-title.Position = UDim2.new(0,15,0,0)
+title.Size = UDim2.new(1, 0, 1, 0)
+title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "Elysium Hub X | <font color='#FF4444'>Garden v5.5.2</font>"
+title.Text = "ELYSIUM HUB <font color='#00FFFF'>X</font> | GROW A GARDEN"
 title.RichText = true
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
-title.TextSize = 14
-title.TextColor3 = Color3.fromRGB(255,255,255)
-
--- CLOSE & MINIMIZE
-local close = Instance.new("TextButton", top)
-close.Size = UDim2.new(0,24,0,24)
-close.Position = UDim2.new(1,-35,0.5,-12)
-close.Text = "X"
-close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-Instance.new("UICorner", close).CornerRadius = UDim.new(0,6)
-
-local minimize = Instance.new("TextButton", top)
-minimize.Size = UDim2.new(0,24,0,24)
-minimize.Position = UDim2.new(1,-65,0.5,-12)
-minimize.Text = "–"
-minimize.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-Instance.new("UICorner", minimize).CornerRadius = UDim.new(0,6)
+title.TextSize = 16
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 -- ================= SIDEBAR =================
 local side = Instance.new("Frame", main)
-side.Position = UDim2.new(0,0,0,40)
-side.Size = UDim2.new(0,140,1,-40)
-side.BackgroundTransparency = 1
+side.Position = UDim2.new(0, 0, 0, 45)
+side.Size = UDim2.new(0, 130, 1, -45)
+side.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 local sideLayout = Instance.new("UIListLayout", side)
-sideLayout.Padding = UDim.new(0,8)
+sideLayout.Padding = UDim.new(0, 5)
 sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- ================= PAGES CONTAINER =================
+-- ================= CONTAINER =================
 local container = Instance.new("Frame", main)
-container.Position = UDim2.new(0,145,0,50)
-container.Size = UDim2.new(1,-155,1,-60)
+container.Position = UDim2.new(0, 140, 0, 55)
+container.Size = UDim2.new(1, -150, 1, -65)
 container.BackgroundTransparency = 1
 
 local pages = {}
 local function createPage(name)
     local p = Instance.new("ScrollingFrame", container)
-    p.Size = UDim2.new(1,0,1,0)
+    p.Size = UDim2.new(1, 0, 1, 0)
     p.BackgroundTransparency = 1
     p.Visible = false
-    p.ScrollBarThickness = 2
+    p.ScrollBarThickness = 0
     local l = Instance.new("UIListLayout", p)
-    l.Padding = UDim.new(0,10)
+    l.Padding = UDim.new(0, 8)
     pages[name] = p
     return p
 end
 
+-- Create All Pages
+local homePage = createPage("Home")
+local mainPage = createPage("Main")
 local shopPage = createPage("Shop")
-createPage("Home")
-createPage("Main")
-createPage("Inventory")
+local playerPage = createPage("Player")
 
--- ================= TOGGLE SYSTEM (Untuk Shop) =================
-local function createToggle(parent, text, flagName, callback)
+-- ================= UNIVERSAL COMPONENTS =================
+local function createToggle(parent, text, flagName)
     local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0.9, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    btn.Size = UDim2.new(0.95, 0, 0, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     btn.Text = text .. ": OFF"
     btn.TextColor3 = Color3.fromRGB(200, 200, 200)
     btn.Font = Enum.Font.GothamBold
@@ -100,91 +100,125 @@ local function createToggle(parent, text, flagName, callback)
     btn.MouseButton1Click:Connect(function()
         Flags[flagName] = not Flags[flagName]
         btn.Text = text .. (Flags[flagName] and ": ON" or ": OFF")
-        btn.TextColor3 = Flags[flagName] and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(200, 200, 200)
-        callback(Flags[flagName])
+        btn.TextColor3 = Flags[flagName] and Color3.fromRGB(0, 255, 255) or Color3.fromRGB(200, 200, 200)
+        btn.BackgroundColor3 = Flags[flagName] and Color3.fromRGB(40, 40, 60) or Color3.fromRGB(30, 30, 40)
     end)
 end
 
--- ================= DAFTAR ITEM SHOP =================
--- Tambahkan nama item lain di sini sesuai yang ada di game kamu
-local ShopItems = {
-    Seeds = {"Carrot", "Tomato", "Potato", "Wheat", "Corn"},
-    Gear = {"BasicWateringCan", "GoldShovel", "SpeedBoots"},
-    Eggs = {"CommonEgg", "RareEgg", "LegendaryEgg"}
-}
+local function createButton(parent, text, color, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0.95, 0, 0, 35)
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", btn)
+    btn.MouseButton1Click:Connect(callback)
+end
 
--- ================= AUTO BUY LOGIC (BUY ALL) =================
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GameEvents = ReplicatedStorage:WaitForChild("GameEvents")
-local SeedRemote = GameEvents:WaitForChild("BuySeedStock")
+-- ================= HOME PAGE =================
+local profile = Instance.new("TextLabel", homePage)
+profile.Size = UDim2.new(0.95, 0, 0, 60)
+profile.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+profile.Text = "User: " .. player.Name .. "\nStatus: Premium User"
+profile.TextColor3 = Color3.new(1, 1, 1)
+profile.Font = Enum.Font.GothamBold
+Instance.new("UICorner", profile)
 
+createButton(homePage, "Join Discord Community", Color3.fromRGB(88, 101, 242), function()
+    -- Copy link to clipboard (Hanya bekerja di beberapa executor)
+    if setclipboard then setclipboard("https://discord.gg/elysium-hub") end
+    print("Link Discord Copied!")
+end)
+
+-- ================= PLAYER PAGE (WALKSPEED & JUMP) =================
+local function createSlider(parent, text, min, max, flagName)
+    local label = Instance.new("TextLabel", parent)
+    label.Size = UDim2.new(0.95, 0, 0, 20)
+    label.Text = text .. ": " .. Flags[flagName]
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.new(1,1,1)
+    
+    local box = Instance.new("TextBox", parent)
+    box.Size = UDim2.new(0.95, 0, 0, 30)
+    box.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    box.Text = tostring(Flags[flagName])
+    box.TextColor3 = Color3.new(0, 1, 1)
+    Instance.new("UICorner", box)
+    
+    box.FocusLost:Connect(function()
+        local val = tonumber(box.Text)
+        if val then
+            Flags[flagName] = val
+            label.Text = text .. ": " .. val
+            if flagName == "WalkSpeed" then Character.Humanoid.WalkSpeed = val end
+            if flagName == "JumpPower" then Character.Humanoid.JumpPower = val end
+        end
+    end)
+end
+
+createSlider(playerPage, "WalkSpeed", 16, 200, "WalkSpeed")
+createSlider(playerPage, "JumpPower", 50, 500, "JumpPower")
+
+-- ================= MAIN PAGE (FARMING) =================
+createToggle(mainPage, "Auto Plant (Tanam)", "AutoPlant")
+createToggle(mainPage, "Auto Collect (Panen)", "AutoCollect")
+createToggle(mainPage, "Auto Sell (Jual)", "AutoSell")
+createToggle(mainPage, "Auto Water (Siram)", "AutoWater")
+createToggle(mainPage, "Auto Shovel (Gali)", "AutoShovel")
+createToggle(mainPage, "Auto Favorite", "AutoFavorite")
+
+-- ================= SHOP & HATCH =================
+createToggle(shopPage, "Auto Hatch (Buka Telur)", "AutoHatch")
+createToggle(shopPage, "Auto Buy Seeds", "AutoSeeds")
+
+-- ================= AUTO LOGIC LOOP =================
 task.spawn(function()
-    while task.wait(1) do -- Interval 1 detik agar tidak lag
-        
-        -- Beli Semua Seeds
-        if Flags.AutoSeeds then
-            for _, seedName in pairs(ShopItems.Seeds) do
-                SeedRemote:FireServer("Shop", seedName)
-            end
+    while task.wait(0.5) do
+        -- Update Humanoid terus menerus agar speed tetap
+        if Character and Character:FindFirstChild("Humanoid") then
+            Character.Humanoid.WalkSpeed = Flags.WalkSpeed
+        end
+
+        -- Logika Auto Farm
+        if Flags.AutoCollect then
+            GameEvents.HarvestPlant:FireServer("All") -- Contoh remote
         end
         
-        -- Beli Semua Gear
-        if Flags.AutoGear then
-            for _, gearName in pairs(ShopItems.Gear) do
-                -- Menggunakan remote yang sama karena biasanya polanya serupa
-                SeedRemote:FireServer("Shop", gearName) 
-            end
+        if Flags.AutoSell then
+            GameEvents.SellItems:FireServer()
         end
         
-        -- Beli Semua Eggs
-        if Flags.AutoEggs then
-            for _, eggName in pairs(ShopItems.Eggs) do
-                SeedRemote:FireServer("Shop", eggName)
-            end
+        if Flags.AutoHatch then
+            GameEvents.HatchEgg:FireServer("CommonEgg", "Single")
         end
         
+        -- Tambahkan logika lainnya di sini sesuai remote game kamu
     end
 end)
 
--- Isi Halaman Shop
-createToggle(shopPage, "Auto Buy Seeds", "AutoSeeds", function(v) end)
-createToggle(shopPage, "Auto Buy Gear", "AutoGear", function(v) end)
-createToggle(shopPage, "Auto Buy Eggs", "AutoEggs", function(v) end)
-
--- ================= NAV LOGIC =================
+-- ================= NAVIGATION =================
 local function openPage(name)
     for _, v in pairs(pages) do v.Visible = false end
     if pages[name] then pages[name].Visible = true end
 end
 
-local function sideButton(text)
+local function sideButton(text, icon)
     local b = Instance.new("TextButton", side)
-    b.Size = UDim2.new(0.9,0,0,35)
-    b.Text = " " .. text
-    b.BackgroundColor3 = Color3.fromRGB(30,30,40)
-    b.TextColor3 = Color3.new(1,1,1)
+    b.Size = UDim2.new(0.9, 0, 0, 40)
+    b.Text = icon .. " " .. text
+    b.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Font = Enum.Font.GothamBold
     b.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function() openPage(text) end)
 end
 
-sideButton("Home")
-sideButton("Main")
-sideButton("Inventory")
-sideButton("Shop")
+sideButton("Home", "🏠")
+sideButton("Main", "🌿")
+sideButton("Player", "⚡")
+sideButton("Shop", "🛒")
 
--- BUBBLE
-local bubble = Instance.new("TextButton", gui)
-bubble.Size = UDim2.new(0,50,0,50)
-bubble.Position = UDim2.new(0,20,0.5,-25)
-bubble.Visible = false
-bubble.Text = "💎"
-bubble.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-bubble.Draggable = true
-Instance.new("UICorner", bubble).CornerRadius = UDim.new(1,0)
-
-minimize.MouseButton1Click:Connect(function() main.Visible = false; bubble.Visible = true end)
-bubble.MouseButton1Click:Connect(function() bubble.Visible = false; main.Visible = true end)
-close.MouseButton1Click:Connect(function() gui:Destroy() end)
-
+-- Close/Minimize Logic (Gunakan logic yang sama dari loader sebelumnya)
 openPage("Home")

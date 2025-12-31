@@ -1,14 +1,14 @@
--- ELYSIUM HUB | V16 FINAL INTEGRATED (NO FEATURES REMOVED)
+-- ELYSIUM HUB | V17 FINAL UI (TOGGLES FIXED)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V16_Final"
+gui.Name = "ElysiumUI_V17"
 gui.ResetOnSpawn = false
 
--- ================= GLOBAL FLAGS (SEMUA FITUR) =================
+-- ================= GLOBAL FLAGS =================
 local Flags = {
     WalkSpeed = 16, InfJump = false,
     -- Auto Plant
@@ -18,7 +18,7 @@ local Flags = {
     -- Auto Water
     AutoWater = false, SelectedWater = "",
     -- Auto Shovel
-    ShovelFruit = "", ShovelPlant = "", ShovelSprinkler = "",
+    AutoShovel = false, ShovelFruit = "", ShovelPlant = "", ShovelSprinkler = "",
     -- Auto Sell
     AutoSellAll = false
 }
@@ -32,9 +32,7 @@ main.BackgroundTransparency = 0.15
 main.Active = true
 main.Draggable = true
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
-local stroke = Instance.new("UIStroke", main)
-stroke.Color = Color3.fromRGB(255, 68, 68)
-stroke.Thickness = 1.5
+Instance.new("UIStroke", main).Color = Color3.fromRGB(255, 68, 68)
 
 -- TOP BAR
 local top = Instance.new("Frame", main)
@@ -47,26 +45,24 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V16 INTEGRATED"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V17"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- ================= BUBBLE (MINIMIZE) =================
+-- BUBBLE MINIMIZE
 local bubble = Instance.new("TextButton", gui)
 bubble.Size = UDim2.new(0, 55, 0, 55)
 bubble.Position = UDim2.new(0, 20, 0.5, -25)
 bubble.Visible = false
 bubble.Text = "💎"
 bubble.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-bubble.BackgroundTransparency = 0.2
 bubble.Active = true
 bubble.Draggable = true
 Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
 
--- WINDOW CONTROLS
 local function createWinBtn(text, pos, color, callback)
     local btn = Instance.new("TextButton", top)
     btn.Size = UDim2.new(0, 25, 0, 25)
@@ -77,12 +73,11 @@ local function createWinBtn(text, pos, color, callback)
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     btn.MouseButton1Click:Connect(callback)
 end
-
 createWinBtn("X", -35, Color3.fromRGB(200, 50, 50), function() gui:Destroy() end)
 createWinBtn("–", -65, Color3.fromRGB(60, 60, 80), function() main.Visible = false; bubble.Visible = true end)
 bubble.MouseButton1Click:Connect(function() main.Visible = true; bubble.Visible = false end)
 
--- ================= SIDEBAR & PAGE SYSTEM =================
+-- ================= SIDEBAR & PAGES =================
 local side = Instance.new("Frame", main)
 side.Position = UDim2.new(0, 8, 0, 55)
 side.Size = UDim2.new(0, 130, 1, -65)
@@ -107,9 +102,7 @@ local function createPage(name)
     return p
 end
 
--- ================= UI BUILDERS (FIXED HIERARCHY) =================
-
--- Header Section (Arrow Expand)
+-- ================= UI BUILDERS =================
 local function createSection(parent, name, defaultVisible)
     local sectionContainer = Instance.new("Frame", parent)
     sectionContainer.Size = UDim2.new(0.98, 0, 0, 0)
@@ -128,7 +121,6 @@ local function createSection(parent, name, defaultVisible)
     btn.Text = "  " .. name
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
     btn.TextXAlignment = Enum.TextXAlignment.Left
 
     local arrow = Instance.new("TextLabel", f)
@@ -153,7 +145,6 @@ local function createSection(parent, name, defaultVisible)
     return content
 end
 
--- Row with Label + Input di Pojok Kanan
 local function createRow(parent, text, type, flag, options)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(0.98, 0, 0, 35)
@@ -218,19 +209,13 @@ local function createRow(parent, text, type, flag, options)
     end
 end
 
--- ================= INITIALIZE ALL PAGES =================
+-- ================= INITIALIZE PAGES =================
 local homePage = createPage("Home")
 local mainPage = createPage("Main")
-local hatchPage = createPage("Auto Hatch")
-local shopPage = createPage("Shop")
-local invPage = createPage("Inventory")
-local miscPage = createPage("Misc")
-local webhookPage = createPage("Webhook")
 
--- --- HOME (LOCAL PLAYER) ---
+-- HOME PAGE
 local lp = createSection(homePage, "Local Player", true)
 createRow(lp, "Infinite Jump", "Toggle", "InfJump")
--- Walkspeed Special Row
 local wsRow = Instance.new("Frame", lp); wsRow.Size = UDim2.new(0.98,0,0,35); wsRow.BackgroundTransparency = 1
 local wsL = Instance.new("TextLabel", wsRow); wsL.Size = UDim2.new(0.4,0,1,0); wsL.Position = UDim2.new(0,12,0,0); wsL.Text = "Walkspeed: 16"; wsL.TextColor3 = Color3.new(1,1,1); wsL.BackgroundTransparency = 1; wsL.Font = Enum.Font.Gotham; wsL.TextXAlignment = Enum.TextXAlignment.Left
 local function addWS(t, x, d)
@@ -239,28 +224,31 @@ local function addWS(t, x, d)
 end
 addWS("+", -34, 10); addWS("-", -65, -10)
 
--- --- MAIN (FARMING) ---
+-- MAIN PAGE (Sesuai Permintaan)
 local plantS = createSection(mainPage, "Auto Plant Seed", true)
 createRow(plantS, "Plant Select", "Search", "SelectedSeed")
 createRow(plantS, "Plant Position", "Cycle", "PlantPos", {"Player Location", "Random Location", "Good Location"})
-createRow(plantS, "Auto Plant", "Toggle", "AutoPlant")
+createRow(plantS, "Enable Auto Plant", "Toggle", "AutoPlant")
 
 local collectS = createSection(mainPage, "Auto Collect", false)
-createRow(collectS, "Auto Collect Plant", "Search", "SelectedCollect")
-createRow(collectS, "Auto Collect Mutation", "Search", "SelectedMutation")
+createRow(collectS, "Search Plant", "Search", "SelectedCollect")
+createRow(collectS, "Search Mutation", "Search", "SelectedMutation")
+createRow(collectS, "Enable Auto Collect", "Toggle", "AutoCollect") -- TAMBAHAN TOGGLE
 
 local waterS = createSection(mainPage, "Auto Water", false)
-createRow(waterS, "Auto Water Plant", "Search", "SelectedWater")
+createRow(waterS, "Search Target", "Search", "SelectedWater")
+createRow(waterS, "Enable Auto Water", "Toggle", "AutoWater") -- TAMBAHAN TOGGLE
 
 local shovelS = createSection(mainPage, "Auto Shovel", false)
-createRow(shovelS, "Shovel Fruit", "Search", "ShovelFruit")
-createRow(shovelS, "Shovel Plant", "Search", "ShovelPlant")
-createRow(shovelS, "Shovel Sprinkler", "Search", "ShovelSprinkler")
+createRow(shovelS, "Search Fruit", "Search", "ShovelFruit")
+createRow(shovelS, "Search Plant", "Search", "ShovelPlant")
+createRow(shovelS, "Search Sprinkler", "Search", "ShovelSprinkler")
+createRow(shovelS, "Enable Auto Shovel", "Toggle", "AutoShovel") -- TAMBAHAN TOGGLE
 
 local sellS = createSection(mainPage, "Auto Sell Plant", false)
 createRow(sellS, "Auto Sell All", "Toggle", "AutoSellAll")
 
--- ================= SIDEBAR BUTTONS =================
+-- SIDEBAR BUTTONS
 local function sideBtn(name, icon)
     local b = Instance.new("TextButton", side)
     b.Size = UDim2.new(1, 0, 0, 40)
@@ -275,24 +263,15 @@ local function sideBtn(name, icon)
         pages[name].Visible = true
     end)
 end
-
 sideBtn("Home", "🏠"); sideBtn("Main", "🔥"); sideBtn("Auto Hatch", "🥚"); sideBtn("Shop", "🛒"); sideBtn("Inventory", "📦"); sideBtn("Misc", "⚙️"); sideBtn("Webhook", "🔗")
 
--- ================= CORE PERSISTENT LOGIC =================
+-- CORE LOOP
 task.spawn(function()
     while task.wait(0.05) do
-        pcall(function()
-            local char = player.Character or player.CharacterAdded:Wait()
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = Flags.WalkSpeed end
-        end)
+        pcall(function() player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed end)
     end
 end)
-
 UserInputService.JumpRequest:Connect(function()
-    if Flags.InfJump and player.Character then
-        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-    end
+    if Flags.InfJump and player.Character then player.Character.Humanoid:ChangeState("Jumping") end
 end)
-
 pages["Home"].Visible = true

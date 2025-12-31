@@ -1,11 +1,11 @@
--- ELYSIUM HUB | V20 TEAM & VISUALS UPDATE
+-- ELYSIUM HUB | V21 FINAL FIX (TEAM SPAWNER BUTTON ADDED)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V20"
+gui.Name = "ElysiumUI_V21"
 gui.ResetOnSpawn = false
 
 -- ================= GLOBAL FLAGS & DATA =================
@@ -31,8 +31,8 @@ local Flags = {
     TeamNameInput = "", SelectedTeamSpawn = ""
 }
 
-local SavedTeams = {} -- Menyimpan daftar tim player
-local TeamDropdowns = {} -- Untuk refresh dropdown otomatis
+local SavedTeams = {} -- List Team yang disimpan
+local TeamDropdowns = {} -- Helper untuk refresh dropdown
 
 -- DATA LISTS
 local EggList = {"Common Egg", "Uncommon Egg", "Rare Egg", "Epic Egg", "Legendary Egg", "Mythic Egg"}
@@ -41,7 +41,7 @@ local Slots = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"}
 
 -- ================= MAIN FRAME =================
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 580, 0, 500) -- Sedikit lebih tinggi
+main.Size = UDim2.new(0, 580, 0, 500)
 main.Position = UDim2.new(0.5, -290, 0.5, -250)
 main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 main.BackgroundTransparency = 0.15
@@ -61,7 +61,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V20"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V21"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
@@ -256,7 +256,6 @@ local function createRow(parent, text, type, flag, options)
     end
 end
 
--- 3. Dynamic Dropdown (Can Refresh)
 local function createDropdown(parent, name, listItems, flag, isTeam)
     local container = Instance.new("Frame", parent)
     container.Size = UDim2.new(0.98, 0, 0, 35)
@@ -395,32 +394,31 @@ createRow(shovelS, "Enable Auto Shovel", "Toggle", "AutoShovel")
 local sellS = createSection(mainPage, "Auto Sell Plant", false)
 createRow(sellS, "Auto Sell All", "Toggle", "AutoSellAll")
 
--- --- AUTO HATCH PAGE (REWORKED) ---
-
--- 1. LOADOUT CONFIG
+-- --- AUTO HATCH PAGE ---
 local loadoutS = createSection(hatchPage, "Auto Pet Loadout", true)
 createRow(loadoutS, "For Place Egg", "Cycle", "LoadoutPlace", Slots)
 createRow(loadoutS, "For Hatch Egg", "Cycle", "LoadoutHatch", Slots)
 createRow(loadoutS, "For Sell Pets", "Cycle", "LoadoutSell", Slots)
 
--- 2. TEAM MANAGER (MAKER & SPAWNER)
 local teamMakeS = createSection(hatchPage, "Pet Team Manager", false)
 createRow(teamMakeS, "Team Name", "Input", "TeamNameInput", {"My Team 1"})
 createRow(teamMakeS, "Save Current Team", "Button", nil, {"SAVE TEAM", function()
     if Flags.TeamNameInput ~= "" then
         table.insert(SavedTeams, Flags.TeamNameInput)
-        for _, func in pairs(TeamDropdowns) do func() end -- Refresh all team dropdowns
+        for _, func in pairs(TeamDropdowns) do func() end
     end
 end})
-createDropdown(teamMakeS, "Pet Team Spawner", SavedTeams, "SelectedTeamSpawn", true) -- List of saved teams
+createDropdown(teamMakeS, "Select Team List", SavedTeams, "SelectedTeamSpawn", true)
+createRow(teamMakeS, "Action", "Button", nil, {"SPAWN TEAM", function() 
+    print("Spawning Team: " .. Flags.SelectedTeamSpawn)
+    -- Logika spawn tim akan ditaruh di sini
+end})
 
--- 3. AUTO TEAM (SELECT SAVED)
 local autoTeamS = createSection(hatchPage, "Auto Team Pet", false)
 createDropdown(autoTeamS, "For Place Egg", SavedTeams, "TeamPlace", true)
 createDropdown(autoTeamS, "For Hatch Egg", SavedTeams, "TeamHatch", true)
 createDropdown(autoTeamS, "For Sell Pets", SavedTeams, "TeamSell", true)
 
--- 4. STANDARD ACTIONS
 local placeEggS = createSection(hatchPage, "Auto Place Egg", false)
 createDropdown(placeEggS, "Select Egg", EggList, "SelectedEggPlace")
 createRow(placeEggS, "Position", "Cycle", "EggPosition", {"Random", "Good Position"})
@@ -445,7 +443,7 @@ createRow(shopS, "Auto Buy All Seeds", "Toggle", "AutoBuySeeds")
 createRow(shopS, "Auto Buy All Gear", "Toggle", "AutoBuyGear")
 createRow(shopS, "Auto Buy All Eggs", "Toggle", "AutoBuyEggs")
 
--- --- MISC PAGE (ESP) ---
+-- --- MISC PAGE ---
 local espS = createSection(miscPage, "ESP Visuals", true)
 createRow(espS, "Egg ESP", "Toggle", "EggESP")
 createRow(espS, "Fruit ESP", "Toggle", "FruitESP")

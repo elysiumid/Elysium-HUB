@@ -1,10 +1,10 @@
--- ELYSIUM HUB | V9 FINAL INTEGRATED
+-- ELYSIUM HUB | V10 FINAL (WITH ARROWS & FIXES)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V9_Final"
+gui.Name = "ElysiumUI_V10"
 gui.ResetOnSpawn = false
 
 -- ================= CONFIG / FLAGS =================
@@ -39,7 +39,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM HUB <font color='#FF4444'>V9</font> | GARDEN"
+title.Text = "ELYSIUM HUB <font color='#FF4444'>V10</font> | GARDEN"
 title.RichText = true
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
@@ -73,7 +73,7 @@ createWinBtn("X", -35, Color3.fromRGB(200, 50, 50), function() gui:Destroy() end
 createWinBtn("–", -65, Color3.fromRGB(60, 60, 80), function() main.Visible = false; bubble.Visible = true end)
 bubble.MouseButton1Click:Connect(function() main.Visible = true; bubble.Visible = false end)
 
--- ================= SIDEBAR & NAVIGATION =================
+-- ================= SIDEBAR & PAGES =================
 local side = Instance.new("Frame", main)
 side.Position = UDim2.new(0, 0, 0, 40)
 side.Size = UDim2.new(0, 140, 1, -40)
@@ -99,7 +99,6 @@ local function createPage(name)
     return p
 end
 
--- MENUS
 local homePage = createPage("Home")
 local mainPage = createPage("Main")
 local hatchPage = createPage("Auto Hatch")
@@ -108,32 +107,50 @@ local invPage = createPage("Inventory")
 local miscPage = createPage("Misc")
 local webhookPage = createPage("Webhook")
 
--- ================= UI BUILDER TOOLS =================
+-- ================= SECTION BUILDER (WITH ARROWS) =================
 local function createSection(parent, name)
-    local f = Instance.new("Frame", parent)
-    f.Size = UDim2.new(0.98, 0, 0, 30)
-    f.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-    f.BackgroundTransparency = 0.6
-    Instance.new("UICorner", f)
-    local l = Instance.new("TextLabel", f)
-    l.Size = UDim2.new(1, 0, 1, 0)
-    l.Text = "  " .. name
-    l.TextColor3 = Color3.new(1,1,1)
-    l.Font = Enum.Font.GothamBold
-    l.TextXAlignment = Enum.TextXAlignment.Left
-    l.BackgroundTransparency = 1
-    local c = Instance.new("Frame", parent)
-    c.Size = UDim2.new(0.98, 0, 0, 0)
-    c.AutomaticSize = Enum.AutomaticSize.Y
-    c.BackgroundTransparency = 1
-    Instance.new("UIListLayout", c).Padding = UDim.new(0, 3)
-    return c
+    local sectionFrame = Instance.new("Frame", parent)
+    sectionFrame.Size = UDim2.new(1, 0, 0, 32)
+    sectionFrame.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+    sectionFrame.BackgroundTransparency = 0.6
+    Instance.new("UICorner", sectionFrame)
+
+    local titleBtn = Instance.new("TextButton", sectionFrame)
+    titleBtn.Size = UDim2.new(1, 0, 1, 0)
+    titleBtn.BackgroundTransparency = 1
+    titleBtn.Text = "  " .. name
+    titleBtn.TextColor3 = Color3.new(1, 1, 1)
+    titleBtn.Font = Enum.Font.GothamBold
+    titleBtn.TextSize = 13
+    titleBtn.TextXAlignment = Enum.TextXAlignment.Left
+
+    local arrow = Instance.new("TextLabel", sectionFrame)
+    arrow.Size = UDim2.new(0, 30, 1, 0)
+    arrow.Position = UDim2.new(1, -30, 0, 0)
+    arrow.Text = "▼"
+    arrow.TextColor3 = Color3.new(1, 1, 1)
+    arrow.BackgroundTransparency = 1
+
+    local content = Instance.new("Frame", parent)
+    content.Size = UDim2.new(1, 0, 0, 0)
+    content.AutomaticSize = Enum.AutomaticSize.Y
+    content.BackgroundTransparency = 1
+    content.Visible = true -- Default terbuka
+
+    local layout = Instance.new("UIListLayout", content)
+    layout.Padding = UDim.new(0, 3)
+
+    titleBtn.MouseButton1Click:Connect(function()
+        content.Visible = not content.Visible
+        arrow.Text = content.Visible and "▼" or "▶"
+    end)
+    return content
 end
 
 -- ================= HOME PAGE CONTENT =================
 local lpContent = createSection(homePage, "Local Player")
 
--- Walkspeed Control
+-- Walkspeed UI
 local wsFrame = Instance.new("Frame", lpContent)
 wsFrame.Size = UDim2.new(1, 0, 0, 40)
 wsFrame.BackgroundTransparency = 0.8
@@ -160,11 +177,10 @@ local function createSpeedBtn(text, posX, delta)
         wsLabel.Text = "  Walkspeed: " .. Flags.WalkSpeed
     end)
 end
-
 createSpeedBtn("+", -35, 10)
 createSpeedBtn("-", -70, -10)
 
--- Infinity Jump Button
+-- Inf Jump Toggle
 local ijBtn = Instance.new("TextButton", lpContent)
 ijBtn.Size = UDim2.new(1, 0, 0, 35)
 ijBtn.Text = "Infinity Jump: OFF"
@@ -177,22 +193,32 @@ ijBtn.MouseButton1Click:Connect(function()
     ijBtn.TextColor3 = Flags.InfJump and Color3.new(0, 1, 1) or Color3.new(1,1,1)
 end)
 
--- Discord Link Button
-local dSection = createSection(homePage, "Links")
-local dBtn = Instance.new("TextButton", dSection)
-dBtn.Size = UDim2.new(1, 0, 0, 35)
-dBtn.Text = "Copy Discord Link"
-dBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-Instance.new("UICorner", dBtn)
-dBtn.MouseButton1Click:Connect(function()
-    if setclipboard then setclipboard("https://discord.gg/elysium") end
-end)
+-- ================= MAIN PAGE CONTENT =================
+local farmSection = createSection(mainPage, "Automation")
 
--- ================= CORE LOGIC (WALKSPEED & JUMP) =================
+local function createToggle(parent, text, flag)
+    local b = Instance.new("TextButton", parent)
+    b.Size = UDim2.new(1, 0, 0, 35)
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    b.Text = "  " .. text .. ": OFF"
+    b.TextColor3 = Color3.new(1,1,1)
+    b.TextXAlignment = Enum.TextXAlignment.Left
+    Instance.new("UICorner", b)
+    b.MouseButton1Click:Connect(function()
+        Flags[flag] = not Flags[flag]
+        b.Text = "  " .. text .. (Flags[flag] and ": ON" or ": OFF")
+        b.TextColor3 = Flags[flag] and Color3.new(0, 1, 1) or Color3.new(1,1,1)
+    end)
+end
+
+createToggle(farmSection, "Auto Plant", "AutoPlant")
+createToggle(farmSection, "Auto Collect", "AutoCollect")
+createToggle(farmSection, "Auto Sell", "AutoSell")
+
+-- ================= LOGIC LOOP =================
 task.spawn(function()
     while task.wait(0.1) do
         pcall(function()
-            -- Force character check to ensure it works after death
             local char = player.Character or player.CharacterAdded:Wait()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum then
@@ -203,14 +229,14 @@ task.spawn(function()
 end)
 
 UserInputService.JumpRequest:Connect(function()
-    pcall(function()
-        if Flags.InfJump and player.Character then
+    if Flags.InfJump and player.Character then
+        pcall(function()
             player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-        end
-    end)
+        end)
+    end
 end)
 
--- ================= SIDEBAR BUTTONS =================
+-- ================= SIDEBAR NAVIGATION =================
 local function sideBtn(name, icon)
     local b = Instance.new("TextButton", side)
     b.Size = UDim2.new(0.9, 0, 0, 35)

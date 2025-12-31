@@ -90,3 +90,28 @@ end)
 player.CharacterAdded:Connect(function()
     humanoid = getHumanoid()
 end)
+
+-- AUTO HARVEST (Grow a Garden)
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local autoHarvest = true
+
+task.spawn(function()
+    while task.wait(1) do
+        if not autoHarvest then continue end
+
+        for _,v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                if string.find(v.Name:lower(), "harvest") then
+                    pcall(function()
+                        v:InputHoldBegin()
+                        task.wait(0.1)
+                        v:InputHoldEnd()
+                    end)
+                end
+            end
+        end
+    end
+end)

@@ -1,44 +1,48 @@
--- ELYSIUM HUB | V19 SHOP UPDATE (FULL INTEGRATED)
+-- ELYSIUM HUB | V20 TEAM & VISUALS UPDATE
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V19"
+gui.Name = "ElysiumUI_V20"
 gui.ResetOnSpawn = false
 
--- ================= GLOBAL FLAGS =================
+-- ================= GLOBAL FLAGS & DATA =================
 local Flags = {
     WalkSpeed = 16, InfJump = false,
-    
-    -- MAIN: FARMING
+    -- FARMING
     AutoPlant = false, SelectedSeed = "", PlantPos = "Player Location",
     AutoCollect = false, SelectedCollect = "", SelectedMutation = "",
     AutoWater = false, SelectedWater = "",
     AutoShovel = false, ShovelFruit = "", ShovelPlant = "", ShovelSprinkler = "",
     AutoSellAll = false,
-
-    -- AUTO HATCH & PETS
+    -- HATCHING & PETS
     AutoPlaceEgg = false, SelectedEggPlace = "Common Egg", EggPosition = "Random", EggAmount = "1",
-    AutoHatch = false, SelectedEggHatch = "Common Egg", HatchMaxWeight = "", HatchMaxAge = "", 
-    BlacklistPet = "",
+    AutoHatch = false, SelectedEggHatch = "Common Egg", HatchMaxWeight = "", HatchMaxAge = "", BlacklistPet = "",
     AutoSellPet = false, SelectedSellPet = "", DontSellPet = "", SellAge = "", SellWeight = "",
-
-    -- AUTO SHOP (NEW V19)
-    AutoBuySeeds = false,
-    AutoBuyGear = false,
-    AutoBuyEggs = false
+    -- SHOP
+    AutoBuySeeds = false, AutoBuyGear = false, AutoBuyEggs = false,
+    -- MISC (ESP)
+    EggESP = false, FruitESP = false,
+    -- LOADOUT & TEAMS
+    LoadoutPlace = "Slot 1", LoadoutHatch = "Slot 1", LoadoutSell = "Slot 1",
+    TeamPlace = "None", TeamHatch = "None", TeamSell = "None",
+    TeamNameInput = "", SelectedTeamSpawn = ""
 }
 
--- DATA LIST (Contoh)
+local SavedTeams = {} -- Menyimpan daftar tim player
+local TeamDropdowns = {} -- Untuk refresh dropdown otomatis
+
+-- DATA LISTS
 local EggList = {"Common Egg", "Uncommon Egg", "Rare Egg", "Epic Egg", "Legendary Egg", "Mythic Egg"}
 local PetList = {"Cat", "Dog", "Bunny", "Bear", "Dragon", "Slime", "Titan"}
+local Slots = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"}
 
 -- ================= MAIN FRAME =================
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 580, 0, 480)
-main.Position = UDim2.new(0.5, -290, 0.5, -240)
+main.Size = UDim2.new(0, 580, 0, 500) -- Sedikit lebih tinggi
+main.Position = UDim2.new(0.5, -290, 0.5, -250)
 main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 main.BackgroundTransparency = 0.15
 main.Active = true
@@ -57,7 +61,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V19"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V20"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
@@ -116,7 +120,6 @@ local function createPage(name)
 end
 
 -- ================= UI BUILDERS =================
--- 1. Main Header
 local function createSection(parent, name, defaultVisible)
     local sectionContainer = Instance.new("Frame", parent)
     sectionContainer.Size = UDim2.new(0.98, 0, 0, 0)
@@ -159,7 +162,6 @@ local function createSection(parent, name, defaultVisible)
     return content
 end
 
--- 2. Standard Rows
 local function createRow(parent, text, type, flag, options)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(0.98, 0, 0, 35)
@@ -231,7 +233,6 @@ local function createRow(parent, text, type, flag, options)
         box1.TextColor3 = Color3.new(1, 1, 1)
         Instance.new("UICorner", box1).CornerRadius = UDim.new(0, 4)
         box1.FocusLost:Connect(function() Flags[flag[2]] = box1.Text end)
-
         local box2 = Instance.new("TextBox", f)
         box2.Size = UDim2.new(0, 55, 0, 24)
         box2.Position = UDim2.new(1, -130, 0.5, -12)
@@ -241,11 +242,22 @@ local function createRow(parent, text, type, flag, options)
         box2.TextColor3 = Color3.new(1, 1, 1)
         Instance.new("UICorner", box2).CornerRadius = UDim.new(0, 4)
         box2.FocusLost:Connect(function() Flags[flag[1]] = box2.Text end)
+    elseif type == "Button" then
+        local btn = Instance.new("TextButton", f)
+        btn.Size = UDim2.new(0, 120, 0, 24)
+        btn.Position = UDim2.new(1, -10, 0.5, -12)
+        btn.AnchorPoint = Vector2.new(1, 0)
+        btn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+        btn.Text = options[1]
+        btn.TextColor3 = Color3.new(1, 1, 1)
+        btn.Font = Enum.Font.GothamBold; btn.TextSize = 11
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+        btn.MouseButton1Click:Connect(function() options[2]() end)
     end
 end
 
--- 3. Dropdown Builder
-local function createDropdown(parent, name, listItems, flag)
+-- 3. Dynamic Dropdown (Can Refresh)
+local function createDropdown(parent, name, listItems, flag, isTeam)
     local container = Instance.new("Frame", parent)
     container.Size = UDim2.new(0.98, 0, 0, 35)
     container.AutomaticSize = Enum.AutomaticSize.Y
@@ -307,9 +319,10 @@ local function createDropdown(parent, name, listItems, flag)
     scroll.ScrollBarThickness = 2
     local listLayout = Instance.new("UIListLayout", scroll); listLayout.Padding = UDim.new(0, 2)
 
-    local function refreshList(filter)
+    local function refreshList(filter, items)
         for _, v in pairs(scroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-        for _, item in pairs(listItems) do
+        local targetList = items or listItems
+        for _, item in pairs(targetList) do
             if filter == "" or string.find(string.lower(item), string.lower(filter)) then
                 local b = Instance.new("TextButton", scroll)
                 b.Size = UDim2.new(1, 0, 0, 25)
@@ -332,13 +345,20 @@ local function createDropdown(parent, name, listItems, flag)
         content.Visible = not content.Visible
         arrow.Text = content.Visible and "▲" or "▼"
     end)
+    
+    if isTeam then
+        table.insert(TeamDropdowns, function() refreshList("", SavedTeams) end)
+    end
 end
 
 -- ================= INITIALIZE PAGES =================
 local homePage = createPage("Home")
 local mainPage = createPage("Main")
 local hatchPage = createPage("Auto Hatch")
-local shopPage = createPage("Shop") -- Shop Page Initialized
+local shopPage = createPage("Shop")
+local invPage = createPage("Inventory")
+local miscPage = createPage("Misc")
+local webhookPage = createPage("Webhook")
 
 -- --- HOME PAGE ---
 local lp = createSection(homePage, "Local Player", true)
@@ -375,8 +395,33 @@ createRow(shovelS, "Enable Auto Shovel", "Toggle", "AutoShovel")
 local sellS = createSection(mainPage, "Auto Sell Plant", false)
 createRow(sellS, "Auto Sell All", "Toggle", "AutoSellAll")
 
--- --- AUTO HATCH PAGE ---
-local placeEggS = createSection(hatchPage, "Auto Place Egg", true)
+-- --- AUTO HATCH PAGE (REWORKED) ---
+
+-- 1. LOADOUT CONFIG
+local loadoutS = createSection(hatchPage, "Auto Pet Loadout", true)
+createRow(loadoutS, "For Place Egg", "Cycle", "LoadoutPlace", Slots)
+createRow(loadoutS, "For Hatch Egg", "Cycle", "LoadoutHatch", Slots)
+createRow(loadoutS, "For Sell Pets", "Cycle", "LoadoutSell", Slots)
+
+-- 2. TEAM MANAGER (MAKER & SPAWNER)
+local teamMakeS = createSection(hatchPage, "Pet Team Manager", false)
+createRow(teamMakeS, "Team Name", "Input", "TeamNameInput", {"My Team 1"})
+createRow(teamMakeS, "Save Current Team", "Button", nil, {"SAVE TEAM", function()
+    if Flags.TeamNameInput ~= "" then
+        table.insert(SavedTeams, Flags.TeamNameInput)
+        for _, func in pairs(TeamDropdowns) do func() end -- Refresh all team dropdowns
+    end
+end})
+createDropdown(teamMakeS, "Pet Team Spawner", SavedTeams, "SelectedTeamSpawn", true) -- List of saved teams
+
+-- 3. AUTO TEAM (SELECT SAVED)
+local autoTeamS = createSection(hatchPage, "Auto Team Pet", false)
+createDropdown(autoTeamS, "For Place Egg", SavedTeams, "TeamPlace", true)
+createDropdown(autoTeamS, "For Hatch Egg", SavedTeams, "TeamHatch", true)
+createDropdown(autoTeamS, "For Sell Pets", SavedTeams, "TeamSell", true)
+
+-- 4. STANDARD ACTIONS
+local placeEggS = createSection(hatchPage, "Auto Place Egg", false)
 createDropdown(placeEggS, "Select Egg", EggList, "SelectedEggPlace")
 createRow(placeEggS, "Position", "Cycle", "EggPosition", {"Random", "Good Position"})
 createRow(placeEggS, "Amount (Ex: 10)", "Input", "EggAmount", {"Amount..."})
@@ -394,11 +439,16 @@ createDropdown(sellPetS, "Don't Sell Pet", PetList, "DontSellPet")
 createRow(sellPetS, "Threshold", "DualInput", {"SellWeight", "SellAge"}, {"KG", "Age"})
 createRow(sellPetS, "Enable Sell Pet", "Toggle", "AutoSellPet")
 
--- --- SHOP PAGE (FITUR BARU) ---
+-- --- SHOP PAGE ---
 local shopS = createSection(shopPage, "Shop Automation", true)
 createRow(shopS, "Auto Buy All Seeds", "Toggle", "AutoBuySeeds")
 createRow(shopS, "Auto Buy All Gear", "Toggle", "AutoBuyGear")
 createRow(shopS, "Auto Buy All Eggs", "Toggle", "AutoBuyEggs")
+
+-- --- MISC PAGE (ESP) ---
+local espS = createSection(miscPage, "ESP Visuals", true)
+createRow(espS, "Egg ESP", "Toggle", "EggESP")
+createRow(espS, "Fruit ESP", "Toggle", "FruitESP")
 
 -- ================= SIDEBAR BUTTONS =================
 local function sideBtn(name, icon)

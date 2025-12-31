@@ -31,7 +31,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1,-100,1,0)
 title.Position = UDim2.new(0,15,0,0)
 title.BackgroundTransparency = 1
-title.Text = "Elysium Hub X | <font color='#FF4444'>v5.5.2</font>"
+title.Text = "Elysium Hub X | <font color='#FF4444'>v1</font>"
 title.RichText = true
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold

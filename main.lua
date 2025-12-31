@@ -1,18 +1,25 @@
--- ELYSIUM HUB | V15 PERFECT UI (EXPANDABLE + RIGHT SEARCH)
+-- ELYSIUM HUB | V16 FINAL INTEGRATED (NO FEATURES REMOVED)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V15"
+gui.Name = "ElysiumUI_V16_Final"
 gui.ResetOnSpawn = false
 
+-- ================= GLOBAL FLAGS (SEMUA FITUR) =================
 local Flags = {
     WalkSpeed = 16, InfJump = false,
-    SelectedSeed = "", PlantPos = "Player", AutoPlant = false,
-    SelectedCollect = "", SelectedMutation = "",
-    SelectedWater = "", ShovelFruit = "", ShovelPlant = "", ShovelSprinkler = "",
+    -- Auto Plant
+    AutoPlant = false, SelectedSeed = "", PlantPos = "Player Location",
+    -- Auto Collect
+    AutoCollect = false, SelectedCollect = "", SelectedMutation = "",
+    -- Auto Water
+    AutoWater = false, SelectedWater = "",
+    -- Auto Shovel
+    ShovelFruit = "", ShovelPlant = "", ShovelSprinkler = "",
+    -- Auto Sell
     AutoSellAll = false
 }
 
@@ -40,20 +47,47 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V15"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V16 INTEGRATED"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 title.TextXAlignment = Enum.TextXAlignment.Left
 
--- ================= SIDEBAR & NAVIGATION =================
+-- ================= BUBBLE (MINIMIZE) =================
+local bubble = Instance.new("TextButton", gui)
+bubble.Size = UDim2.new(0, 55, 0, 55)
+bubble.Position = UDim2.new(0, 20, 0.5, -25)
+bubble.Visible = false
+bubble.Text = "💎"
+bubble.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+bubble.BackgroundTransparency = 0.2
+bubble.Active = true
+bubble.Draggable = true
+Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
+
+-- WINDOW CONTROLS
+local function createWinBtn(text, pos, color, callback)
+    local btn = Instance.new("TextButton", top)
+    btn.Size = UDim2.new(0, 25, 0, 25)
+    btn.Position = UDim2.new(1, pos, 0.5, -12)
+    btn.Text = text
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    btn.MouseButton1Click:Connect(callback)
+end
+
+createWinBtn("X", -35, Color3.fromRGB(200, 50, 50), function() gui:Destroy() end)
+createWinBtn("–", -65, Color3.fromRGB(60, 60, 80), function() main.Visible = false; bubble.Visible = true end)
+bubble.MouseButton1Click:Connect(function() main.Visible = true; bubble.Visible = false end)
+
+-- ================= SIDEBAR & PAGE SYSTEM =================
 local side = Instance.new("Frame", main)
 side.Position = UDim2.new(0, 8, 0, 55)
 side.Size = UDim2.new(0, 130, 1, -65)
 side.BackgroundTransparency = 1
-local sideLayout = Instance.new("UIListLayout", side)
-sideLayout.Padding = UDim.new(0, 5)
+Instance.new("UIListLayout", side).Padding = UDim.new(0, 5)
 
 local container = Instance.new("Frame", main)
 container.Position = UDim2.new(0, 145, 0, 55)
@@ -73,9 +107,9 @@ local function createPage(name)
     return p
 end
 
--- ================= COMPONENT BUILDERS (PERFECTION) =================
+-- ================= UI BUILDERS (FIXED HIERARCHY) =================
 
--- 1. Main Expandable Section
+-- Header Section (Arrow Expand)
 local function createSection(parent, name, defaultVisible)
     local sectionContainer = Instance.new("Frame", parent)
     sectionContainer.Size = UDim2.new(0.98, 0, 0, 0)
@@ -119,7 +153,7 @@ local function createSection(parent, name, defaultVisible)
     return content
 end
 
--- 2. Sub-Row with RIGHT SEARCH / RIGHT TOGGLE
+-- Row with Label + Input di Pojok Kanan
 local function createRow(parent, text, type, flag, options)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(0.98, 0, 0, 35)
@@ -148,7 +182,6 @@ local function createRow(parent, text, type, flag, options)
         dot.Position = UDim2.new(0, 2, 0.5, -8)
         dot.BackgroundColor3 = Color3.new(1, 1, 1)
         Instance.new("UICorner", dot)
-
         sw.MouseButton1Click:Connect(function()
             Flags[flag] = not Flags[flag]
             TweenService:Create(dot, TweenInfo.new(0.2), {Position = Flags[flag] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
@@ -163,8 +196,7 @@ local function createRow(parent, text, type, flag, options)
         input.Text = ""
         input.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
         input.TextColor3 = Color3.new(1, 1, 1)
-        input.Font = Enum.Font.Gotham
-        input.TextSize = 11
+        input.Font = Enum.Font.Gotham; input.TextSize = 11
         Instance.new("UICorner", input).CornerRadius = UDim.new(0, 4)
         input.FocusLost:Connect(function() Flags[flag] = input.Text end)
     elseif type == "Cycle" then
@@ -175,8 +207,7 @@ local function createRow(parent, text, type, flag, options)
         btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         btn.Text = options[1]
         btn.TextColor3 = Color3.new(1, 1, 1)
-        btn.Font = Enum.Font.Gotham
-        btn.TextSize = 11
+        btn.Font = Enum.Font.Gotham; btn.TextSize = 11
         Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
         local idx = 1
         btn.MouseButton1Click:Connect(function()
@@ -187,30 +218,31 @@ local function createRow(parent, text, type, flag, options)
     end
 end
 
--- ================= INITIALIZE PAGES =================
-local mainPage = createPage("Main")
+-- ================= INITIALIZE ALL PAGES =================
 local homePage = createPage("Home")
+local mainPage = createPage("Main")
+local hatchPage = createPage("Auto Hatch")
+local shopPage = createPage("Shop")
+local invPage = createPage("Inventory")
+local miscPage = createPage("Misc")
+local webhookPage = createPage("Webhook")
 
--- --- HOME PAGE ---
+-- --- HOME (LOCAL PLAYER) ---
 local lp = createSection(homePage, "Local Player", true)
 createRow(lp, "Infinite Jump", "Toggle", "InfJump")
--- Walkspeed khusus (pakai +/- karena lebih enak di HP/PC)
-local wsRow = Instance.new("Frame", lp)
-wsRow.Size = UDim2.new(0.98, 0, 0, 35)
-wsRow.BackgroundTransparency = 1
-local wsL = Instance.new("TextLabel", wsRow)
-wsL.Size = UDim2.new(0.4,0,1,0); wsL.Position = UDim2.new(0,12,0,0); wsL.Text = "Walkspeed: 16"; wsL.TextColor3 = Color3.new(1,1,1); wsL.BackgroundTransparency = 1; wsL.TextXAlignment = Enum.TextXAlignment.Left; wsL.Font = Enum.Font.Gotham
-
+-- Walkspeed Special Row
+local wsRow = Instance.new("Frame", lp); wsRow.Size = UDim2.new(0.98,0,0,35); wsRow.BackgroundTransparency = 1
+local wsL = Instance.new("TextLabel", wsRow); wsL.Size = UDim2.new(0.4,0,1,0); wsL.Position = UDim2.new(0,12,0,0); wsL.Text = "Walkspeed: 16"; wsL.TextColor3 = Color3.new(1,1,1); wsL.BackgroundTransparency = 1; wsL.Font = Enum.Font.Gotham; wsL.TextXAlignment = Enum.TextXAlignment.Left
 local function addWS(t, x, d)
     local b = Instance.new("TextButton", wsRow); b.Size = UDim2.new(0,24,0,24); b.Position = UDim2.new(1,x,0.5,-12); b.Text = t; b.BackgroundColor3 = Color3.fromRGB(50,50,60); b.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner",b)
     b.MouseButton1Click:Connect(function() Flags.WalkSpeed = math.clamp(Flags.WalkSpeed + d, 16, 500); wsL.Text = "Walkspeed: "..Flags.WalkSpeed end)
 end
 addWS("+", -34, 10); addWS("-", -65, -10)
 
--- --- MAIN PAGE (Sesuai Permintaanmu) ---
+-- --- MAIN (FARMING) ---
 local plantS = createSection(mainPage, "Auto Plant Seed", true)
 createRow(plantS, "Plant Select", "Search", "SelectedSeed")
-createRow(plantS, "Plant Position", "Cycle", "PlantPos", {"Player", "Random", "Good"})
+createRow(plantS, "Plant Position", "Cycle", "PlantPos", {"Player Location", "Random Location", "Good Location"})
 createRow(plantS, "Auto Plant", "Toggle", "AutoPlant")
 
 local collectS = createSection(mainPage, "Auto Collect", false)
@@ -228,7 +260,7 @@ createRow(shovelS, "Shovel Sprinkler", "Search", "ShovelSprinkler")
 local sellS = createSection(mainPage, "Auto Sell Plant", false)
 createRow(sellS, "Auto Sell All", "Toggle", "AutoSellAll")
 
--- ================= SIDEBAR & CORE =================
+-- ================= SIDEBAR BUTTONS =================
 local function sideBtn(name, icon)
     local b = Instance.new("TextButton", side)
     b.Size = UDim2.new(1, 0, 0, 40)
@@ -236,9 +268,7 @@ local function sideBtn(name, icon)
     b.BackgroundTransparency = 0.5
     b.Text = "  " .. icon .. "  " .. name
     b.TextColor3 = Color3.new(1, 1, 1)
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 12
-    b.TextXAlignment = Enum.TextXAlignment.Left
+    b.Font = Enum.Font.GothamBold; b.TextSize = 12; b.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
     b.MouseButton1Click:Connect(function()
         for _, p in pairs(pages) do p.Visible = false end
@@ -248,9 +278,20 @@ end
 
 sideBtn("Home", "🏠"); sideBtn("Main", "🔥"); sideBtn("Auto Hatch", "🥚"); sideBtn("Shop", "🛒"); sideBtn("Inventory", "📦"); sideBtn("Misc", "⚙️"); sideBtn("Webhook", "🔗")
 
+-- ================= CORE PERSISTENT LOGIC =================
 task.spawn(function()
     while task.wait(0.05) do
-        pcall(function() player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed end)
+        pcall(function()
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = Flags.WalkSpeed end
+        end)
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if Flags.InfJump and player.Character then
+        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
     end
 end)
 

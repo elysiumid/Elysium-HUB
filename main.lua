@@ -1,3 +1,19 @@
+-- GAME CHECK (Grow a Garden only)
+local GROW_A_GARDEN_ID = game.PlaceId  -- sementara biarkan ini
+
+-- notif helper
+local function notify(txt)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "Elysium HUB",
+            Text = txt,
+            Duration = 4
+        })
+    end)
+end
+
+notify("Elysium HUB loaded")
+
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification",{
         Title = "Elysium HUB",

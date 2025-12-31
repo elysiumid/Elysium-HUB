@@ -1,18 +1,17 @@
--- ELYSIUM HUB | V10 FINAL (WITH ARROWS & FIXES)
+-- ELYSIUM HUB | V11 ULTIMATE FIX
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V10"
+gui.Name = "ElysiumUI_V11"
 gui.ResetOnSpawn = false
 
 -- ================= CONFIG / FLAGS =================
 local Flags = {
     WalkSpeed = 16,
     InfJump = false,
-    AutoPlant = false, AutoCollect = false, AutoSell = false,
-    AutoHatch = false
+    AutoPlant = false, AutoCollect = false, AutoSell = false
 }
 
 -- ================= MAIN FRAME =================
@@ -39,7 +38,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM HUB <font color='#FF4444'>V10</font> | GARDEN"
+title.Text = "ELYSIUM HUB <font color='#FF4444'>V11</font> | GARDEN"
 title.RichText = true
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
@@ -73,7 +72,7 @@ createWinBtn("X", -35, Color3.fromRGB(200, 50, 50), function() gui:Destroy() end
 createWinBtn("–", -65, Color3.fromRGB(60, 60, 80), function() main.Visible = false; bubble.Visible = true end)
 bubble.MouseButton1Click:Connect(function() main.Visible = true; bubble.Visible = false end)
 
--- ================= SIDEBAR & PAGES =================
+-- ================= SIDEBAR & NAVIGATION =================
 local side = Instance.new("Frame", main)
 side.Position = UDim2.new(0, 0, 0, 40)
 side.Size = UDim2.new(0, 140, 1, -40)
@@ -107,7 +106,7 @@ local invPage = createPage("Inventory")
 local miscPage = createPage("Misc")
 local webhookPage = createPage("Webhook")
 
--- ================= SECTION BUILDER (WITH ARROWS) =================
+-- ================= NEW SECTION BUILDER (FIXED) =================
 local function createSection(parent, name)
     local sectionFrame = Instance.new("Frame", parent)
     sectionFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -135,10 +134,8 @@ local function createSection(parent, name)
     content.Size = UDim2.new(1, 0, 0, 0)
     content.AutomaticSize = Enum.AutomaticSize.Y
     content.BackgroundTransparency = 1
-    content.Visible = true -- Default terbuka
-
-    local layout = Instance.new("UIListLayout", content)
-    layout.Padding = UDim.new(0, 3)
+    content.Visible = true 
+    Instance.new("UIListLayout", content).Padding = UDim.new(0, 3)
 
     titleBtn.MouseButton1Click:Connect(function()
         content.Visible = not content.Visible
@@ -147,10 +144,9 @@ local function createSection(parent, name)
     return content
 end
 
--- ================= HOME PAGE CONTENT =================
+-- ================= HOME PAGE CONTENT (WALKSPEED FIX) =================
 local lpContent = createSection(homePage, "Local Player")
 
--- Walkspeed UI
 local wsFrame = Instance.new("Frame", lpContent)
 wsFrame.Size = UDim2.new(1, 0, 0, 40)
 wsFrame.BackgroundTransparency = 0.8
@@ -175,12 +171,15 @@ local function createSpeedBtn(text, posX, delta)
     b.MouseButton1Click:Connect(function()
         Flags.WalkSpeed = math.clamp(Flags.WalkSpeed + delta, 0, 500)
         wsLabel.Text = "  Walkspeed: " .. Flags.WalkSpeed
+        -- Update langsung saat diklik agar responsif
+        pcall(function()
+            player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed
+        end)
     end)
 end
 createSpeedBtn("+", -35, 10)
 createSpeedBtn("-", -70, -10)
 
--- Inf Jump Toggle
 local ijBtn = Instance.new("TextButton", lpContent)
 ijBtn.Size = UDim2.new(1, 0, 0, 35)
 ijBtn.Text = "Infinity Jump: OFF"
@@ -193,36 +192,17 @@ ijBtn.MouseButton1Click:Connect(function()
     ijBtn.TextColor3 = Flags.InfJump and Color3.new(0, 1, 1) or Color3.new(1,1,1)
 end)
 
--- ================= MAIN PAGE CONTENT =================
-local farmSection = createSection(mainPage, "Automation")
-
-local function createToggle(parent, text, flag)
-    local b = Instance.new("TextButton", parent)
-    b.Size = UDim2.new(1, 0, 0, 35)
-    b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    b.Text = "  " .. text .. ": OFF"
-    b.TextColor3 = Color3.new(1,1,1)
-    b.TextXAlignment = Enum.TextXAlignment.Left
-    Instance.new("UICorner", b)
-    b.MouseButton1Click:Connect(function()
-        Flags[flag] = not Flags[flag]
-        b.Text = "  " .. text .. (Flags[flag] and ": ON" or ": OFF")
-        b.TextColor3 = Flags[flag] and Color3.new(0, 1, 1) or Color3.new(1,1,1)
-    end)
-end
-
-createToggle(farmSection, "Auto Plant", "AutoPlant")
-createToggle(farmSection, "Auto Collect", "AutoCollect")
-createToggle(farmSection, "Auto Sell", "AutoSell")
-
--- ================= LOGIC LOOP =================
+-- ================= LOGIC LOOP (FORCE SPEED) =================
 task.spawn(function()
-    while task.wait(0.1) do
+    while true do
+        task.wait(0.05) -- Loop lebih cepat untuk melawan anticheat
         pcall(function()
-            local char = player.Character or player.CharacterAdded:Wait()
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.WalkSpeed = Flags.WalkSpeed
+            local char = player.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.WalkSpeed = Flags.WalkSpeed
+                end
             end
         end)
     end
@@ -236,16 +216,16 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- ================= SIDEBAR NAVIGATION =================
+-- ================= SIDEBAR BUTTONS =================
 local function sideBtn(name, icon)
     local b = Instance.new("TextButton", side)
-    b.Size = UDim2.new(0.9, 0, 0, 35)
+    b.Size = UDim2.new(0, 120, 0, 35)
     b.Text = icon .. "  " .. name
     b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     b.BackgroundTransparency = 0.4
     b.TextColor3 = Color3.new(1, 1, 1)
     b.Font = Enum.Font.GothamBold
-    b.TextSize = 12
+    b.TextSize = 11
     b.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function()

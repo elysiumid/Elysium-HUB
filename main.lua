@@ -1,25 +1,26 @@
--- ELYSIUM HUB | V8 TRANSPARENT EDITION
+-- ELYSIUM HUB | V9 FINAL FIX
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V8"
+gui.Name = "ElysiumUI_V9"
 gui.ResetOnSpawn = false
 
 -- ================= CONFIG / FLAGS =================
 local Flags = {
     WalkSpeed = 16,
     InfJump = false,
-    AutoPlant = false, AutoCollect = false, AutoSell = false
+    AutoPlant = false, AutoCollect = false, AutoSell = false,
+    AutoHatch = false
 }
 
--- ================= MAIN FRAME (TRANSPARENT) =================
+-- ================= MAIN FRAME =================
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 580, 0, 400)
-main.Position = UDim2.new(0.5, -290, 0.5, -200)
+main.Size = UDim2.new(0, 580, 0, 420)
+main.Position = UDim2.new(0.5, -290, 0.5, -210)
 main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-main.BackgroundTransparency = 0.2 -- Efek Transparan
+main.BackgroundTransparency = 0.2 
 main.Active = true
 main.Draggable = true
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
@@ -38,7 +39,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM HUB <font color='#FF4444'>V8</font> | GARDEN"
+title.Text = "ELYSIUM HUB <font color='#FF4444'>V9</font> | GARDEN"
 title.RichText = true
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
@@ -78,12 +79,12 @@ side.Position = UDim2.new(0, 0, 0, 40)
 side.Size = UDim2.new(0, 140, 1, -40)
 side.BackgroundTransparency = 1
 local sideLayout = Instance.new("UIListLayout", side)
-sideLayout.Padding = UDim.new(0, 4)
+sideLayout.Padding = UDim.new(0, 2)
 sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 local container = Instance.new("Frame", main)
 container.Position = UDim2.new(0, 145, 0, 45)
-container.Size = UDim2.new(1, -150, 1, -50)
+container.Size = UDim2.new(1, -150, 1, -55)
 container.BackgroundTransparency = 1
 
 local pages = {}
@@ -98,18 +99,21 @@ local function createPage(name)
     return p
 end
 
--- ================= UI BUILDER (HOME/LOCAL PLAYER) =================
+-- SEMUA MENU KIRI
 local homePage = createPage("Home")
 local mainPage = createPage("Main")
 local hatchPage = createPage("Auto Hatch")
 local shopPage = createPage("Shop")
+local invPage = createPage("Inventory")
+local miscPage = createPage("Misc")
+local webhookPage = createPage("Webhook")
 
--- Section Local Player di Home
+-- ================= HOME PAGE (LOCAL PLAYER FIX) =================
 local function createSection(parent, name)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(0.98, 0, 0, 30)
     f.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-    f.BackgroundTransparency = 0.5
+    f.BackgroundTransparency = 0.6
     Instance.new("UICorner", f)
     local l = Instance.new("TextLabel", f)
     l.Size = UDim2.new(1, 0, 1, 0)
@@ -128,14 +132,15 @@ end
 
 local lpContent = createSection(homePage, "Local Player")
 
--- WALK SPEED WITH + AND -
+-- Walkspeed Display
 local wsFrame = Instance.new("Frame", lpContent)
 wsFrame.Size = UDim2.new(1, 0, 0, 40)
 wsFrame.BackgroundTransparency = 0.8
 wsFrame.BackgroundColor3 = Color3.new(0,0,0)
+Instance.new("UICorner", wsFrame)
 
 local wsLabel = Instance.new("TextLabel", wsFrame)
-wsLabel.Size = UDim2.new(0.4, 0, 1, 0)
+wsLabel.Size = UDim2.new(0.5, 0, 1, 0)
 wsLabel.Text = "  Walkspeed: " .. Flags.WalkSpeed
 wsLabel.TextColor3 = Color3.new(1,1,1)
 wsLabel.BackgroundTransparency = 1
@@ -146,7 +151,7 @@ local function createSpeedBtn(text, posX, delta)
     b.Size = UDim2.new(0, 30, 0, 30)
     b.Position = UDim2.new(1, posX, 0.5, -15)
     b.Text = text
-    b.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    b.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
     b.TextColor3 = Color3.new(1, 1, 1)
     Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function()
@@ -155,10 +160,10 @@ local function createSpeedBtn(text, posX, delta)
     end)
 end
 
-createSpeedBtn("+", -40, 5)
-createSpeedBtn("-", -80, -5)
+createSpeedBtn("+", -35, 10)
+createSpeedBtn("-", -70, -10)
 
--- INFINITY JUMP TOGGLE
+-- Infinity Jump
 local ijBtn = Instance.new("TextButton", lpContent)
 ijBtn.Size = UDim2.new(1, 0, 0, 35)
 ijBtn.Text = "Infinity Jump: OFF"
@@ -171,31 +176,34 @@ ijBtn.MouseButton1Click:Connect(function()
     ijBtn.TextColor3 = Flags.InfJump and Color3.new(0, 1, 1) or Color3.new(1,1,1)
 end)
 
--- ================= LOGIC LOOP =================
--- Infinity Jump Logic
-UserInputService.JumpRequest:Connect(function()
-    if Flags.InfJump then
-        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+-- ================= LOGIC LOOP (WALKSPEED FIX) =================
+task.spawn(function()
+    while task.wait(0.1) do
+        pcall(function()
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed
+            end
+        end)
     end
 end)
 
--- Walkspeed Loop
-task.spawn(function()
-    while task.wait(0.1) do
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed
-        end
+UserInputService.JumpRequest:Connect(function()
+    if Flags.InfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
     end
 end)
 
 -- ================= SIDEBAR BUTTONS =================
 local function sideBtn(name, icon)
     local b = Instance.new("TextButton", side)
-    b.Size = UDim2.new(0.9, 0, 0, 38)
+    b.Size = UDim2.new(0.9, 0, 0, 35)
     b.Text = icon .. "  " .. name
-    b.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     b.BackgroundTransparency = 0.4
-    b.TextColor3 = Color3.new(1,1,1)
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 12
+    b.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", b)
     b.MouseButton1Click:Connect(function()
         for _, p in pairs(pages) do p.Visible = false end
@@ -207,5 +215,8 @@ sideBtn("Home", "🏠")
 sideBtn("Main", "🔥")
 sideBtn("Auto Hatch", "🥚")
 sideBtn("Shop", "🛒")
+sideBtn("Inventory", "📦")
+sideBtn("Misc", "⚙️")
+sideBtn("Webhook", "🔗")
 
 pages["Home"].Visible = true

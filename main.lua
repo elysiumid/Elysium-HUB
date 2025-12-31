@@ -1,10 +1,10 @@
--- ELYSIUM HUB | V9 FINAL FIX
+-- ELYSIUM HUB | V9 FINAL INTEGRATED
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V9"
+gui.Name = "ElysiumUI_V9_Final"
 gui.ResetOnSpawn = false
 
 -- ================= CONFIG / FLAGS =================
@@ -73,7 +73,7 @@ createWinBtn("X", -35, Color3.fromRGB(200, 50, 50), function() gui:Destroy() end
 createWinBtn("–", -65, Color3.fromRGB(60, 60, 80), function() main.Visible = false; bubble.Visible = true end)
 bubble.MouseButton1Click:Connect(function() main.Visible = true; bubble.Visible = false end)
 
--- ================= SIDEBAR & PAGES =================
+-- ================= SIDEBAR & NAVIGATION =================
 local side = Instance.new("Frame", main)
 side.Position = UDim2.new(0, 0, 0, 40)
 side.Size = UDim2.new(0, 140, 1, -40)
@@ -99,7 +99,7 @@ local function createPage(name)
     return p
 end
 
--- SEMUA MENU KIRI
+-- MENUS
 local homePage = createPage("Home")
 local mainPage = createPage("Main")
 local hatchPage = createPage("Auto Hatch")
@@ -108,7 +108,7 @@ local invPage = createPage("Inventory")
 local miscPage = createPage("Misc")
 local webhookPage = createPage("Webhook")
 
--- ================= HOME PAGE (LOCAL PLAYER FIX) =================
+-- ================= UI BUILDER TOOLS =================
 local function createSection(parent, name)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(0.98, 0, 0, 30)
@@ -130,9 +130,10 @@ local function createSection(parent, name)
     return c
 end
 
+-- ================= HOME PAGE CONTENT =================
 local lpContent = createSection(homePage, "Local Player")
 
--- Walkspeed Display
+-- Walkspeed Control
 local wsFrame = Instance.new("Frame", lpContent)
 wsFrame.Size = UDim2.new(1, 0, 0, 40)
 wsFrame.BackgroundTransparency = 0.8
@@ -163,7 +164,7 @@ end
 createSpeedBtn("+", -35, 10)
 createSpeedBtn("-", -70, -10)
 
--- Infinity Jump
+-- Infinity Jump Button
 local ijBtn = Instance.new("TextButton", lpContent)
 ijBtn.Size = UDim2.new(1, 0, 0, 35)
 ijBtn.Text = "Infinity Jump: OFF"
@@ -176,21 +177,37 @@ ijBtn.MouseButton1Click:Connect(function()
     ijBtn.TextColor3 = Flags.InfJump and Color3.new(0, 1, 1) or Color3.new(1,1,1)
 end)
 
--- ================= LOGIC LOOP (WALKSPEED FIX) =================
+-- Discord Link Button
+local dSection = createSection(homePage, "Links")
+local dBtn = Instance.new("TextButton", dSection)
+dBtn.Size = UDim2.new(1, 0, 0, 35)
+dBtn.Text = "Copy Discord Link"
+dBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+Instance.new("UICorner", dBtn)
+dBtn.MouseButton1Click:Connect(function()
+    if setclipboard then setclipboard("https://discord.gg/elysium") end
+end)
+
+-- ================= CORE LOGIC (WALKSPEED & JUMP) =================
 task.spawn(function()
     while task.wait(0.1) do
         pcall(function()
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed
+            -- Force character check to ensure it works after death
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = Flags.WalkSpeed
             end
         end)
     end
 end)
 
 UserInputService.JumpRequest:Connect(function()
-    if Flags.InfJump and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-        player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-    end
+    pcall(function()
+        if Flags.InfJump and player.Character then
+            player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+        end
+    end)
 end)
 
 -- ================= SIDEBAR BUTTONS =================

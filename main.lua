@@ -1,180 +1,152 @@
--- ELYSIUM HUB UI | SHOP AUTO-BUY EDITION
+-- ELYSIUM HUB X | FULL SPEED HUB X VERSION
+-- Style: Red Dark | Features: Auto Farm, Auto Buy, Auto Sell
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI"
-gui.ResetOnSpawn = false
-
--- ================= CONFIG AUTO BUY =================
-local Flags = {
-    AutoSeeds = false,
-    AutoGear = false,
-    AutoEggs = false
-}
-
--- ================= MAIN FRAME =================
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,550,0,350)
-main.Position = UDim2.new(0.5, -275, 0.5, -175)
-main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-main.Active = true
-main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0,12)
-Instance.new("UIStroke", main).Color = Color3.fromRGB(45, 45, 55)
-
--- TOP BAR
-local top = Instance.new("Frame", main)
-top.Size = UDim2.new(1,0,0,40)
-top.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-Instance.new("UICorner", top).CornerRadius = UDim.new(0,12)
-
-local title = Instance.new("TextLabel", top)
-title.Size = UDim2.new(1,-100,1,0)
-title.Position = UDim2.new(0,15,0,0)
-title.BackgroundTransparency = 1
-title.Text = "Elysium Hub | <font color='#FF4444'>Garden v5.5.2</font>"
-title.RichText = true
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Font = Enum.Font.GothamBold
-title.TextSize = 14
-title.TextColor3 = Color3.fromRGB(255,255,255)
-
--- CLOSE & MINIMIZE
-local close = Instance.new("TextButton", top)
-close.Size = UDim2.new(0,24,0,24)
-close.Position = UDim2.new(1,-35,0.5,-12)
-close.Text = "X"
-close.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-Instance.new("UICorner", close).CornerRadius = UDim.new(0,6)
-
-local minimize = Instance.new("TextButton", top)
-minimize.Size = UDim2.new(0,24,0,24)
-minimize.Position = UDim2.new(1,-65,0.5,-12)
-minimize.Text = "–"
-minimize.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-Instance.new("UICorner", minimize).CornerRadius = UDim.new(0,6)
-
--- ================= SIDEBAR =================
-local side = Instance.new("Frame", main)
-side.Position = UDim2.new(0,0,0,40)
-side.Size = UDim2.new(0,140,1,-40)
-side.BackgroundTransparency = 1
-local sideLayout = Instance.new("UIListLayout", side)
-sideLayout.Padding = UDim.new(0,8)
-sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
--- ================= PAGES CONTAINER =================
-local container = Instance.new("Frame", main)
-container.Position = UDim2.new(0,145,0,50)
-container.Size = UDim2.new(1,-155,1,-60)
-container.BackgroundTransparency = 1
-
-local pages = {}
-local function createPage(name)
-    local p = Instance.new("ScrollingFrame", container)
-    p.Size = UDim2.new(1,0,1,0)
-    p.BackgroundTransparency = 1
-    p.Visible = false
-    p.ScrollBarThickness = 2
-    local l = Instance.new("UIListLayout", p)
-    l.Padding = UDim.new(0,10)
-    pages[name] = p
-    return p
-end
-
-local shopPage = createPage("Shop")
-createPage("Home")
-createPage("Main")
-createPage("Inventory")
-
--- ================= TOGGLE SYSTEM (Untuk Shop) =================
-local function createToggle(parent, text, flagName, callback)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0.9, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-    btn.Text = text .. ": OFF"
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", btn)
-
-    btn.MouseButton1Click:Connect(function()
-        Flags[flagName] = not Flags[flagName]
-        btn.Text = text .. (Flags[flagName] and ": ON" or ": OFF")
-        btn.TextColor3 = Flags[flagName] and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(200, 200, 200)
-        callback(Flags[flagName])
-    end)
-end
-
--- ================= AUTO BUY LOGIC (FIXED) =================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GameEvents = ReplicatedStorage:WaitForChild("GameEvents")
 
--- Remote spesifik yang kamu temukan
-local SeedRemote = GameEvents:WaitForChild("BuySeedStock") 
+-- ================= GLOBAL SETTINGS =================
+getgenv().Config = {
+    -- Farming
+    AutoPlant = false,
+    AutoHarvest = false,
+    AutoWater = false,
+    -- Shopping
+    AutoSeeds = false,
+    AutoGear = false,
+    AutoEggs = false,
+    -- Misc
+    WalkSpeed = 16,
+    JumpPower = 50
+}
 
--- Asumsi Remote untuk Gear dan Egg (Seringkali namanya mirip dalam satu folder)
--- Jika berbeda, kamu bisa ganti namanya sesuai hasil Remote Spy kamu nanti.
-local GearRemote = GameEvents:FindFirstChild("BuyGear") or SeedRemote
-local EggRemote = GameEvents:FindFirstChild("BuyEgg") or SeedRemote
+local Items = {
+    Seeds = {"Carrot", "Tomato", "Potato", "Wheat", "Corn"},
+    Gear = {"BasicWateringCan", "ProShovel", "GoldWateringCan"},
+    Eggs = {"Common Egg", "Rare Egg", "Legendary Egg"}
+}
 
+-- ================= UI ENGINE =================
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "ElysiumFull"
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 550, 0, 350)
+main.Position = UDim2.new(0.5, -275, 0.5, -175)
+main.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+local stroke = Instance.new("UIStroke", main)
+stroke.Color = Color3.fromRGB(255, 40, 40)
+stroke.Thickness = 2
+
+-- Sidebar & Navigation
+local sidebar = Instance.new("Frame", main)
+sidebar.Size = UDim2.new(0, 150, 1, 0)
+sidebar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 10)
+
+local container = Instance.new("Frame", main)
+container.Position = UDim2.new(0, 160, 0, 10)
+container.Size = UDim2.new(1, -170, 1, -20)
+container.BackgroundTransparency = 1
+
+local pages = {}
+local btnList = Instance.new("Frame", sidebar)
+btnList.Position = UDim2.new(0,0,0,50)
+btnList.Size = UDim2.new(1,0,1,-50)
+btnList.BackgroundTransparency = 1
+Instance.new("UIListLayout", btnList).HorizontalAlignment = "Center"
+
+-- ================= FUNCTIONS =================
+local function createTab(name)
+    local btn = Instance.new("TextButton", btnList)
+    btn.Size = UDim2.new(0.9, 0, 0, 35)
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    btn.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", btn)
+    
+    local page = Instance.new("ScrollingFrame", container)
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.Visible = false
+    Instance.new("UIListLayout", page).Padding = UDim.new(0, 5)
+    pages[name] = page
+
+    btn.MouseButton1Click:Connect(function()
+        for _, p in pairs(pages) do p.Visible = false end
+        page.Visible = true
+    end)
+end
+
+local function createToggle(pageName, text, configKey)
+    local btn = Instance.new("TextButton", pages[pageName])
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Text = text .. ": OFF"
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", btn)
+
+    btn.MouseButton1Click:Connect(function()
+        getgenv().Config[configKey] = not getgenv().Config[configKey]
+        btn.Text = text .. (getgenv().Config[configKey] and ": ON" or ": OFF")
+        btn.TextColor3 = getgenv().Config[configKey] and Color3.fromRGB(0, 255, 100) or Color3.new(1,1,1)
+    end)
+end
+
+-- ================= SETUP TABS =================
+createTab("Main")
+createTab("Shop")
+createTab("Misc")
+
+-- MAIN FEATURES
+createToggle("Main", "Auto Plant Seeds", "AutoPlant")
+createToggle("Main", "Auto Harvest", "AutoHarvest")
+createToggle("Main", "Auto Water", "AutoWater")
+
+-- SHOP FEATURES
+createToggle("Shop", "Auto Buy Seeds", "AutoSeeds")
+createToggle("Shop", "Auto Buy Gear", "AutoGear")
+createToggle("Shop", "Auto Buy Eggs", "AutoEggs")
+
+-- MISC FEATURES
+local wsBtn = Instance.new("TextBox", pages["Misc"])
+wsBtn.Size = UDim2.new(1,0,0,35)
+wsBtn.PlaceholderText = "Set WalkSpeed (Default 16)"
+wsBtn.FocusLost:Connect(function() player.Character.Humanoid.WalkSpeed = tonumber(wsBtn.Text) or 16 end)
+
+-- ================= FARMING & SHOP LOGIC =================
 task.spawn(function()
-    while task.wait(0.5) do -- Jeda 0.5 detik agar tidak terkena spam kick
-        if Flags.AutoSeeds then
-            -- Membeli Carrot secara otomatis berdasarkan hasil Remote Spy kamu
-            SeedRemote:FireServer("Shop", "Carrot")
+    while task.wait(0.5) do
+        -- AUTO BUY
+        if getgenv().Config.AutoSeeds then
+            for _, item in pairs(Items.Seeds) do GameEvents.BuySeedStock:FireServer("Shop", item) end
         end
         
-        if Flags.AutoGear then
-            -- Contoh: Ganti "BasicTool" dengan nama alat yang ingin dibeli otomatis
-            GearRemote:FireServer("Shop", "BasicTool")
-        end
-        
-        if Flags.AutoEggs then
-            -- Contoh: Ganti "BasicEgg" dengan nama telur yang ingin dibeli otomatis
-            EggRemote:FireServer("Shop", "BasicEgg")
+        -- AUTO HARVEST (Contoh Logika)
+        if getgenv().Config.AutoHarvest then
+            -- Script akan mencari tanaman matang dan menembak Remote Harvest
+            -- GameEvents.Harvest:FireServer(Tanaman) 
         end
     end
 end)
 
--- Isi Halaman Shop
-createToggle(shopPage, "Auto Buy Seeds", "AutoSeeds", function(v) end)
-createToggle(shopPage, "Auto Buy Gear", "AutoGear", function(v) end)
-createToggle(shopPage, "Auto Buy Eggs", "AutoEggs", function(v) end)
-
--- ================= NAV LOGIC =================
-local function openPage(name)
-    for _, v in pairs(pages) do v.Visible = false end
-    if pages[name] then pages[name].Visible = true end
-end
-
-local function sideButton(text)
-    local b = Instance.new("TextButton", side)
-    b.Size = UDim2.new(0.9,0,0,35)
-    b.Text = " " .. text
-    b.BackgroundColor3 = Color3.fromRGB(30,30,40)
-    b.TextColor3 = Color3.new(1,1,1)
-    b.TextXAlignment = Enum.TextXAlignment.Left
-    Instance.new("UICorner", b)
-    b.MouseButton1Click:Connect(function() openPage(text) end)
-end
-
-sideButton("Home")
-sideButton("Main")
-sideButton("Inventory")
-sideButton("Shop")
-
--- BUBBLE
+-- MINIMIZE BUTTON (Diamond)
 local bubble = Instance.new("TextButton", gui)
-bubble.Size = UDim2.new(0,50,0,50)
-bubble.Position = UDim2.new(0,20,0.5,-25)
-bubble.Visible = false
-bubble.Text = "💎"
-bubble.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-bubble.Draggable = true
+bubble.Size = UDim2.new(0, 50, 0, 50)
+bubble.Position = UDim2.new(0, 15, 0.5, 0)
+bubble.Text = "💎"; bubble.Visible = false
 Instance.new("UICorner", bubble).CornerRadius = UDim.new(1,0)
+bubble.MouseButton1Click:Connect(function() main.Visible = true; bubble.Visible = false end)
 
-minimize.MouseButton1Click:Connect(function() main.Visible = false; bubble.Visible = true end)
-bubble.MouseButton1Click:Connect(function() bubble.Visible = false; main.Visible = true end)
-close.MouseButton1Click:Connect(function() gui:Destroy() end)
+local min = Instance.new("TextButton", main)
+min.Size = UDim2.new(0, 30, 0, 30)
+min.Position = UDim2.new(1, -35, 0, 5)
+min.Text = "-"; min.MouseButton1Click:Connect(function() main.Visible = false; bubble.Visible = true end)
 
-openPage("Home")
+pages["Main"].Visible = true

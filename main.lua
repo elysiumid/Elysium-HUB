@@ -1,3 +1,17 @@
+-- GAME LOCK (Grow a Garden only)
+local ALLOWED_PLACE_ID = 126884695634066
+
+if game.PlaceId ~= ALLOWED_PLACE_ID then
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification",{
+            Title = "Elysium HUB",
+            Text = "Game tidak didukung",
+            Duration = 5
+        })
+    end)
+    return
+end
+
 -- ELYSIUM HUB | SPEED X STYLE + TABS
 -- Delta Safe | Purple UI
 

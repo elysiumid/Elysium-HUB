@@ -1,16 +1,16 @@
--- ELYSIUM HUB | V23 REAL DATA EDITION
+-- ELYSIUM HUB | V24 HYPER SPEED EDITION
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService") -- Service untuk loop ultra cepat
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V23"
+gui.Name = "ElysiumUI_V24_Speed"
 gui.ResetOnSpawn = false
 
--- ================= REAL GAME DATA =================
--- [!] DATA ASLI DARI REQUEST KAMU
+-- ================= REAL GAME DATA (SEEDS) =================
 local SeedList = {
     "Carrot", "Strawberry", "Blueberry", "Buttercup", "Tomato", "Corn",
     "Daffodil", "Watermelon", "Pumpkin", "Apple", "Bamboo", "Coconut",
@@ -20,24 +20,22 @@ local SeedList = {
     "Crimson Thorn", "Zebrazinkle", "Octobloom", "Firework Fern"
 }
 
--- Dummy Data (Belum ada info asli)
-local EggList = {"Common Egg", "Uncommon Egg", "Rare Egg", "Epic Egg", "Legendary Egg", "Mythic Egg"}
+-- Placeholder Data (Nanti diisi data asli Gear/Egg darimu)
+local EggList = {"Common Egg", "Uncommon Egg", "Rare Egg", "Epic Egg", "Legendary Egg"} 
 local PetList = {"Cat", "Dog", "Bunny", "Bear", "Dragon", "Slime", "Titan"}
 local Slots = {"Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"}
 
 -- ================= REMOTE CONFIGURATION =================
 local GameEvents = ReplicatedStorage:WaitForChild("GameEvents")
 
--- Mapping Remote berdasarkan info kamu
+-- [!] Pastikan nama remote ini benar
 local Remotes = {
-    Buy = GameEvents:WaitForChild("BuySeedStock"), -- [CONFIRMED]
-    
-    -- [!] PERKIRAAN (Biasanya satu folder dengan BuySeedStock)
-    -- Jika fitur di bawah ini tidak jalan, cek nama aslinya pakai RemoteSpy
+    Buy = GameEvents:WaitForChild("BuySeedStock"), 
     Plant = GameEvents:FindFirstChild("PlantSeed") or GameEvents:FindFirstChild("PlaceItem"),
     Harvest = GameEvents:FindFirstChild("HarvestPlant") or GameEvents:FindFirstChild("Collect"),
     Water = GameEvents:FindFirstChild("WaterPlant"),
-    Sell = GameEvents:FindFirstChild("SellItems")
+    Sell = GameEvents:FindFirstChild("SellItems"),
+    Equip = GameEvents:FindFirstChild("EquipPet") -- Sesuaikan jika beda
 }
 
 -- ================= GLOBAL FLAGS =================
@@ -55,15 +53,13 @@ local Flags = {
     AutoSellPet = false, SelectedSellPet = "", DontSellPet = "", SellAge = "", SellWeight = "",
     -- SHOP
     AutoBuySeeds = false, AutoBuyGear = false, AutoBuyEggs = false,
-    -- MISC
-    EggESP = false, FruitESP = false,
     -- TEAMS
     LoadoutPlace = "Slot 1", LoadoutHatch = "Slot 1", LoadoutSell = "Slot 1",
     TeamNameInput = "", SavedTeams = {}
 }
 local TeamDropdowns = {} 
 
--- ================= MAIN UI SETUP =================
+-- ================= UI CONSTRUCTION =================
 local main = Instance.new("Frame", gui)
 main.Size = UDim2.new(0, 580, 0, 500)
 main.Position = UDim2.new(0.5, -290, 0.5, -250)
@@ -84,7 +80,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V23 REAL DATA"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V24 HYPER SPEED"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
@@ -95,8 +91,8 @@ local bubble = Instance.new("TextButton", gui)
 bubble.Size = UDim2.new(0, 55, 0, 55)
 bubble.Position = UDim2.new(0, 20, 0.5, -25)
 bubble.Visible = false
-bubble.Text = "💎"
-bubble.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+bubble.Text = "⚡"
+bubble.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
 Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
 
 local function createWinBtn(text, pos, color, callback)
@@ -137,7 +133,7 @@ local function createPage(name)
     return p
 end
 
--- ================= UI BUILDER FUNCTIONS =================
+-- ================= BUILDER FUNCTIONS (STANDARD) =================
 local function createSection(parent, name, defaultVisible)
     local sectionContainer = Instance.new("Frame", parent); sectionContainer.Size = UDim2.new(0.98, 0, 0, 0); sectionContainer.AutomaticSize = Enum.AutomaticSize.Y; sectionContainer.BackgroundTransparency = 1
     local f = Instance.new("Frame", sectionContainer); f.Size = UDim2.new(1, 0, 0, 35); f.BackgroundColor3 = Color3.fromRGB(255, 68, 68); f.BackgroundTransparency = 0.65; Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
@@ -154,12 +150,15 @@ local function createRow(parent, text, type, flag, options)
     if type == "Toggle" then
         local sw = Instance.new("TextButton", f); sw.Size = UDim2.new(0, 40, 0, 20); sw.Position = UDim2.new(1, -50, 0.5, -10); sw.BackgroundColor3 = Color3.fromRGB(50, 50, 60); sw.Text = ""; Instance.new("UICorner", sw).CornerRadius = UDim.new(1, 0)
         local dot = Instance.new("Frame", sw); dot.Size = UDim2.new(0, 16, 0, 16); dot.Position = UDim2.new(0, 2, 0.5, -8); dot.BackgroundColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", dot)
-        sw.MouseButton1Click:Connect(function() Flags[flag] = not Flags[flag]; TweenService:Create(dot, TweenInfo.new(0.2), {Position = Flags[flag] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play(); TweenService:Create(sw, TweenInfo.new(0.2), {BackgroundColor3 = Flags[flag] and Color3.fromRGB(255, 68, 68) or Color3.fromRGB(50, 50, 60)}):Play() end)
+        sw.MouseButton1Click:Connect(function()
+            Flags[flag] = not Flags[flag]
+            TweenService:Create(dot, TweenInfo.new(0.2), {Position = Flags[flag] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
+            TweenService:Create(sw, TweenInfo.new(0.2), {BackgroundColor3 = Flags[flag] and Color3.fromRGB(255, 68, 68) or Color3.fromRGB(50, 50, 60)}):Play()
+        end)
     elseif type == "Search" or type == "Input" then
         local input = Instance.new("TextBox", f); input.Size = UDim2.new(0, 120, 0, 24); input.Position = UDim2.new(1, -10, 0.5, -12); input.AnchorPoint = Vector2.new(1, 0); input.PlaceholderText = options and options[1] or "Type..."; input.Text = ""; input.BackgroundColor3 = Color3.fromRGB(20, 20, 25); input.TextColor3 = Color3.new(1, 1, 1); input.Font = Enum.Font.Gotham; input.TextSize = 11; Instance.new("UICorner", input).CornerRadius = UDim.new(0, 4); input.FocusLost:Connect(function() Flags[flag] = input.Text end)
     elseif type == "Cycle" then
-        local btn = Instance.new("TextButton", f); btn.Size = UDim2.new(0, 120, 0, 24); btn.Position = UDim2.new(1, -10, 0.5, -12); btn.AnchorPoint = Vector2.new(1, 0); btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50); btn.Text = options[1]; btn.TextColor3 = Color3.new(1, 1, 1); btn.Font = Enum.Font.Gotham; btn.TextSize = 11; Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-        local idx = 1; btn.MouseButton1Click:Connect(function() idx = idx % #options + 1; Flags[flag] = options[idx]; btn.Text = Flags[flag] end)
+        local btn = Instance.new("TextButton", f); btn.Size = UDim2.new(0, 120, 0, 24); btn.Position = UDim2.new(1, -10, 0.5, -12); btn.AnchorPoint = Vector2.new(1, 0); btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50); btn.Text = options[1]; btn.TextColor3 = Color3.new(1, 1, 1); btn.Font = Enum.Font.Gotham; btn.TextSize = 11; Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4); local idx = 1; btn.MouseButton1Click:Connect(function() idx = idx % #options + 1; Flags[flag] = options[idx]; btn.Text = Flags[flag] end)
     elseif type == "DualInput" then
         local box1 = Instance.new("TextBox", f); box1.Size = UDim2.new(0, 55, 0, 24); box1.Position = UDim2.new(1, -70, 0.5, -12); box1.AnchorPoint = Vector2.new(1, 0); box1.PlaceholderText = options[2]; box1.BackgroundColor3 = Color3.fromRGB(20, 20, 25); box1.TextColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", box1).CornerRadius = UDim.new(0, 4); box1.FocusLost:Connect(function() Flags[flag[2]] = box1.Text end)
         local box2 = Instance.new("TextBox", f); box2.Size = UDim2.new(0, 55, 0, 24); box2.Position = UDim2.new(1, -130, 0.5, -12); box2.AnchorPoint = Vector2.new(1, 0); box2.PlaceholderText = options[1]; box2.BackgroundColor3 = Color3.fromRGB(20, 20, 25); box2.TextColor3 = Color3.new(1, 1, 1); Instance.new("UICorner", box2).CornerRadius = UDim.new(0, 4); box2.FocusLost:Connect(function() Flags[flag[1]] = box2.Text end)
@@ -208,7 +207,7 @@ addWS("+", -34, 10); addWS("-", -65, -10)
 
 -- MAIN
 local plantS = createSection(mainPage, "Auto Plant Seed", true)
-createDropdown(plantS, "Select Seed", SeedList, "SelectedSeed") -- UPDATED TO DROPDOWN WITH REAL DATA
+createDropdown(plantS, "Select Seed", SeedList, "SelectedSeed")
 createRow(plantS, "Plant Position", "Cycle", "PlantPos", {"Player Location", "Random Location", "Good Location"})
 createRow(plantS, "Enable Auto Plant", "Toggle", "AutoPlant")
 
@@ -276,48 +275,72 @@ local function sideBtn(name, icon)
     b.MouseButton1Click:Connect(function() for _, p in pairs(pages) do p.Visible = false end; pages[name].Visible = true end)
 end
 sideBtn("Home", "🏠"); sideBtn("Main", "🔥"); sideBtn("Auto Hatch", "🥚"); sideBtn("Shop", "🛒"); sideBtn("Inventory", "📦"); sideBtn("Misc", "⚙️"); sideBtn("Webhook", "🔗")
+pages["Home"].Visible = true
 
--- =================================================================
--- ==================== CORE LOGIC =================================
--- =================================================================
+-- =========================================================================
+-- ================== CORE LOGIC (HYPER SPEED MODE) ========================
+-- =========================================================================
 
--- 1. AUTO BUY LOGIC (CONNECTED TO REMOTE)
+-- 1. AUTO BUY (INSTANT LOOP)
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait() do -- No delay (Ultra Fast)
         if Flags.AutoBuySeeds and Remotes.Buy then
             for _, seedName in pairs(SeedList) do
                 Remotes.Buy:FireServer("Shop", seedName)
-                task.wait(0.1) -- Delay kecil agar tidak crash
             end
         end
-        -- (Logic Gear dan Egg bisa ditambahkan jika kamu punya daftar namanya)
+        -- Auto Buy Gear/Egg logic here if needed
     end
 end)
 
--- 2. AUTO PLANT LOGIC
+-- 2. AUTO PLANT & HARVEST (INSTANT LOOP)
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait() do -- Ultra Fast check
         if Flags.AutoPlant and Flags.SelectedSeed ~= "" and Remotes.Plant then
-            -- Cari plot kosong di workspace (sesuaikan nama folder)
             local gardens = workspace:FindFirstChild("Plots") or workspace:FindFirstChild("Gardens")
             if gardens then
                 for _, plot in pairs(gardens:GetChildren()) do
-                    -- Logic menanam: Biasanya argumennya (NamaBibit, LokasiPlot)
-                    -- Perlu disesuaikan jika game minta argumen lain
+                    -- Fire instantly for all plots
                     Remotes.Plant:FireServer(Flags.SelectedSeed, plot)
+                end
+            end
+        end
+
+        if Flags.AutoCollect and Remotes.Harvest then
+            local gardens = workspace:FindFirstChild("Plots") or workspace:FindFirstChild("Gardens")
+            if gardens then
+                for _, plot in pairs(gardens:GetChildren()) do
+                    -- Fire instantly
+                    Remotes.Harvest:FireServer(plot)
                 end
             end
         end
     end
 end)
 
--- 3. CORE LOOP
+-- 3. AUTO WATER (INSTANT LOOP)
 task.spawn(function()
-    while task.wait(0.05) do
-        pcall(function() player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed end)
+    while task.wait() do
+        if Flags.AutoWater and Remotes.Water then
+            local gardens = workspace:FindFirstChild("Plots") or workspace:FindFirstChild("Gardens")
+            if gardens then
+                for _, plot in pairs(gardens:GetChildren()) do
+                    Remotes.Water:FireServer(plot)
+                end
+            end
+        end
     end
 end)
+
+-- 4. WALKSPEED (PERSISTENT)
+task.spawn(function()
+    while task.wait() do -- Cek setiap frame
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed
+        end
+    end
+end)
+
 UserInputService.JumpRequest:Connect(function()
     if Flags.InfJump and player.Character then player.Character.Humanoid:ChangeState("Jumping") end
 end)
-pages["Home"].Visible = true

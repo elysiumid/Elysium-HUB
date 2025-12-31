@@ -1,15 +1,16 @@
--- ELYSIUM HUB | FIXED VERSION
+-- ELYSIUM HUB | FIXED + AUTO BUY
 -- Delta Safe | Grow a Garden
 
 -- ===== SERVICES =====
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 -- ===== WAIT PLAYER =====
 repeat task.wait() until player and player:FindFirstChild("PlayerGui")
 
--- ===== GAME LOCK (SAFE) =====
+-- ===== GAME LOCK =====
 local ALLOWED_PLACE_ID = 126884695634066
 if game.PlaceId ~= ALLOWED_PLACE_ID then
     pcall(function()
@@ -49,7 +50,7 @@ gui.Parent = player.PlayerGui
 
 -- ===== MAIN FRAME =====
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,280,0,300)
+main.Size = UDim2.new(0,280,0,360)
 main.Position = UDim2.new(0.05,0,0.3,0)
 main.BackgroundColor3 = Color3.fromRGB(45,20,70)
 main.Active = true
@@ -104,7 +105,7 @@ content.Size = UDim2.new(1,0,1,-45)
 content.BackgroundTransparency = 1
 
 local layout = Instance.new("UIListLayout", content)
-layout.Padding = UDim.new(0,10)
+layout.Padding = UDim.new(0,8)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 -- ===== MINIMIZE LOGIC =====
@@ -112,14 +113,14 @@ local minimized = false
 minBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     content.Visible = not minimized
-    main.Size = minimized and UDim2.new(0,280,0,45) or UDim2.new(0,280,0,300)
+    main.Size = minimized and UDim2.new(0,280,0,45) or UDim2.new(0,280,0,360)
     minBtn.Text = minimized and "+" or "-"
 end)
 
 -- ===== TOGGLE MAKER =====
 local function toggleButton(text, onEnable, onDisable)
     local btn = Instance.new("TextButton", content)
-    btn.Size = UDim2.new(0.9,0,0,40)
+    btn.Size = UDim2.new(0.9,0,0,38)
     btn.Text = text.." : OFF"
     btn.Font = Enum.Font.Gotham
     btn.TextScaled = true
@@ -132,15 +133,32 @@ local function toggleButton(text, onEnable, onDisable)
         state = not state
         btn.Text = text..(state and " : ON" or " : OFF")
         btn.BackgroundColor3 = state and Color3.fromRGB(160,110,240) or Color3.fromRGB(90,60,140)
-        if state then
-            onEnable()
-        else
-            onDisable()
-        end
+        if state then onEnable() else onDisable() end
     end)
 end
 
--- ===== FEATURES =====
+-- ===== DROPDOWN =====
+local function dropdown(titleText, options, callback)
+    local btn = Instance.new("TextButton", content)
+    btn.Size = UDim2.new(0.9,0,0,36)
+    btn.Font = Enum.Font.Gotham
+    btn.TextScaled = true
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.BackgroundColor3 = Color3.fromRGB(70,45,120)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+
+    local index = 1
+    btn.Text = titleText..": "..options[index]
+
+    btn.MouseButton1Click:Connect(function()
+        index = index + 1
+        if index > #options then index = 1 end
+        btn.Text = titleText..": "..options[index]
+        callback(options[index])
+    end)
+end
+
+-- ===== PLAYER FEATURES =====
 toggleButton("Speed", function()
     humanoid.WalkSpeed = 60
 end, function()
@@ -151,4 +169,66 @@ toggleButton("Jump", function()
     humanoid.JumpPower = 120
 end, function()
     humanoid.JumpPower = 50
+end)
+
+-- =====================================================
+-- ================== AUTO BUY SYSTEM ==================
+-- =====================================================
+
+local buyRemote = ReplicatedStorage.GameEvents:WaitForChild("BuySeedStock")
+
+local ITEMS = {
+    Seed = {
+        {Name="Carrot", Price=10},
+        {Name="Potato", Price=20},
+    },
+    Gear = {
+        {Name="WateringCan", Price=50},
+    },
+    Egg = {
+        {Name="BasicEgg", Price=100},
+    }
+}
+
+local selectedCategory = "Seed"
+local selectedItem = ITEMS.Seed[1].Name
+local selectedPrice = ITEMS.Seed[1].Price
+local autoBuy = false
+
+dropdown("Type", {"Seed","Gear","Egg"}, function(v)
+    selectedCategory = v
+    selectedItem = ITEMS[v][1].Name
+    selectedPrice = ITEMS[v][1].Price
+end)
+
+dropdown("Item", {"Carrot","Potato","WateringCan","BasicEgg"}, function(v)
+    for _,list in pairs(ITEMS) do
+        for _,item in pairs(list) do
+            if item.Name == v then
+                selectedItem = item.Name
+                selectedPrice = item.Price
+            end
+        end
+    end
+end)
+
+toggleButton("Auto Buy", function()
+    autoBuy = true
+    task.spawn(function()
+        while autoBuy do
+            pcall(function()
+                local coins = player:FindFirstChild("leaderstats")
+                    and player.leaderstats:FindFirstChild("Coins")
+                if coins and coins.Value >= selectedPrice then
+                    buyRemote:FireServer(
+                        selectedCategory == "Seed" and "Shop" or selectedCategory,
+                        selectedItem
+                    )
+                end
+            end)
+            task.wait(5) -- DELAY AMAN (Speed X style)
+        end
+    end)
+end, function()
+    autoBuy = false
 end)

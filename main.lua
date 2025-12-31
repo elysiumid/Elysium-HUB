@@ -105,22 +105,33 @@ local function createToggle(parent, text, flagName, callback)
     end)
 end
 
--- ================= AUTO BUY LOGIC (Sesuaikan RemoteEvent Game Kamu) =================
--- Ganti "BuyRemote" dengan nama RemoteEvent yang ada di game Garden tersebut.
+-- ================= AUTO BUY LOGIC (FIXED) =================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Remote = ReplicatedStorage:FindFirstChild("BuyItem") or ReplicatedStorage:FindFirstChild("ShopRemote")
+local GameEvents = ReplicatedStorage:WaitForChild("GameEvents")
+
+-- Remote spesifik yang kamu temukan
+local SeedRemote = GameEvents:WaitForChild("BuySeedStock") 
+
+-- Asumsi Remote untuk Gear dan Egg (Seringkali namanya mirip dalam satu folder)
+-- Jika berbeda, kamu bisa ganti namanya sesuai hasil Remote Spy kamu nanti.
+local GearRemote = GameEvents:FindFirstChild("BuyGear") or SeedRemote
+local EggRemote = GameEvents:FindFirstChild("BuyEgg") or SeedRemote
 
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.5) do -- Jeda 0.5 detik agar tidak terkena spam kick
         if Flags.AutoSeeds then
-            -- Contoh: Remote:FireServer("SeedName", 1)
-            print("Membeli Seeds...") 
+            -- Membeli Carrot secara otomatis berdasarkan hasil Remote Spy kamu
+            SeedRemote:FireServer("Shop", "Carrot")
         end
+        
         if Flags.AutoGear then
-            print("Membeli Gear...")
+            -- Contoh: Ganti "BasicTool" dengan nama alat yang ingin dibeli otomatis
+            GearRemote:FireServer("Shop", "BasicTool")
         end
+        
         if Flags.AutoEggs then
-            print("Membeli Eggs...")
+            -- Contoh: Ganti "BasicEgg" dengan nama telur yang ingin dibeli otomatis
+            EggRemote:FireServer("Shop", "BasicEgg")
         end
     end
 end)

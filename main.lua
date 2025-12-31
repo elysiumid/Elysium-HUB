@@ -1,204 +1,126 @@
--- ELYSIUM HUB | STABLE VERSION
--- Delta Safe | Grow a Garden
+-- ELYSIUM HUB UI ONLY
+-- Speed Hub X style | Delta safe
 
--- ===== SERVICES =====
 local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
-
--- ===== WAIT PLAYER =====
-repeat task.wait() until player and player:FindFirstChild("PlayerGui")
-
--- ===== GAME LOCK =====
-local ALLOWED_PLACE_ID = 126884695634066
-if game.PlaceId ~= ALLOWED_PLACE_ID then
-    pcall(function()
-        StarterGui:SetCore("SendNotification",{
-            Title = "Elysium HUB",
-            Text = "Game tidak didukung",
-            Duration = 5
-        })
-    end)
-    return
-end
-
--- ===== HUMANOID =====
-local function getHumanoid()
-    local char = player.Character or player.CharacterAdded:Wait()
-    return char:WaitForChild("Humanoid")
-end
-local humanoid = getHumanoid()
-player.CharacterAdded:Connect(function()
-    humanoid = getHumanoid()
-end)
-
--- ===== NOTIF =====
-pcall(function()
-    StarterGui:SetCore("SendNotification",{
-        Title = "Elysium HUB",
-        Text = "Loaded successfully",
-        Duration = 3
-    })
-end)
-
--- ===== GUI =====
-local gui = Instance.new("ScreenGui")
-gui.Name = "ElysiumHub"
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "ElysiumUI"
 gui.ResetOnSpawn = false
-gui.Parent = player.PlayerGui
 
--- ===== MAIN FRAME =====
+-- ================= MAIN FRAME =================
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,280,0,360)
-main.Position = UDim2.new(0.05,0,0.3,0)
-main.BackgroundColor3 = Color3.fromRGB(45,20,70)
+main.Size = UDim2.new(0,520,0,320)
+main.Position = UDim2.new(0.25,0,0.25,0)
+main.BackgroundColor3 = Color3.fromRGB(20,20,25)
 main.Active = true
 main.Draggable = true
 Instance.new("UICorner", main).CornerRadius = UDim.new(0,14)
 
--- ===== TOP BAR =====
+-- ================= TOP BAR =================
 local top = Instance.new("Frame", main)
-top.Size = UDim2.new(1,0,0,40)
-top.BackgroundColor3 = Color3.fromRGB(110,60,180)
+top.Size = UDim2.new(1,0,0,38)
+top.BackgroundColor3 = Color3.fromRGB(35,35,45)
 Instance.new("UICorner", top).CornerRadius = UDim.new(0,14)
 
 local title = Instance.new("TextLabel", top)
-title.Size = UDim2.new(1,-90,1,0)
-title.Position = UDim2.new(0,12,0,0)
+title.Size = UDim2.new(1,-80,1,0)
+title.Position = UDim2.new(0,14,0,0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM HUB"
+title.Text = "Speed Hub X | Style UI"
+title.TextXAlignment = Left
 title.Font = Enum.Font.GothamBold
 title.TextScaled = true
-title.TextColor3 = Color3.new(1,1,1)
-title.TextXAlignment = Enum.TextXAlignment.Left
+title.TextColor3 = Color3.fromRGB(230,230,230)
 
 -- CLOSE
-local closeBtn = Instance.new("TextButton", top)
-closeBtn.Size = UDim2.new(0,30,0,30)
-closeBtn.Position = UDim2.new(1,-35,0.5,-15)
-closeBtn.Text = "X"
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextScaled = true
-closeBtn.TextColor3 = Color3.new(1,1,1)
-closeBtn.BackgroundColor3 = Color3.fromRGB(180,70,70)
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
-closeBtn.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
+local close = Instance.new("TextButton", top)
+close.Size = UDim2.new(0,28,0,28)
+close.Position = UDim2.new(1,-34,0.5,-14)
+close.Text = "X"
+close.Font = Enum.Font.GothamBold
+close.TextScaled = true
+close.TextColor3 = Color3.new(1,1,1)
+close.BackgroundColor3 = Color3.fromRGB(170,60,60)
+Instance.new("UICorner", close).CornerRadius = UDim.new(1,0)
 
 -- MINIMIZE
-local minBtn = Instance.new("TextButton", top)
-minBtn.Size = UDim2.new(0,30,0,30)
-minBtn.Position = UDim2.new(1,-70,0.5,-15)
-minBtn.Text = "-"
-minBtn.Font = Enum.Font.GothamBold
-minBtn.TextScaled = true
-minBtn.TextColor3 = Color3.new(1,1,1)
-minBtn.BackgroundColor3 = Color3.fromRGB(140,90,220)
-Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0,8)
+local minimize = Instance.new("TextButton", top)
+minimize.Size = UDim2.new(0,28,0,28)
+minimize.Position = UDim2.new(1,-68,0.5,-14)
+minimize.Text = "–"
+minimize.Font = Enum.Font.GothamBold
+minimize.TextScaled = true
+minimize.TextColor3 = Color3.new(1,1,1)
+minimize.BackgroundColor3 = Color3.fromRGB(120,90,200)
+Instance.new("UICorner", minimize).CornerRadius = UDim.new(1,0)
 
--- ===== CONTENT =====
+-- ================= SIDEBAR =================
+local side = Instance.new("Frame", main)
+side.Position = UDim2.new(0,0,0,38)
+side.Size = UDim2.new(0,130,1,-38)
+side.BackgroundColor3 = Color3.fromRGB(25,25,35)
+
+local sideLayout = Instance.new("UIListLayout", side)
+sideLayout.Padding = UDim.new(0,6)
+sideLayout.HorizontalAlignment = Center
+
+local function sideButton(text)
+    local b = Instance.new("TextButton", side)
+    b.Size = UDim2.new(0.9,0,0,32)
+    b.Text = text
+    b.Font = Enum.Font.Gotham
+    b.TextScaled = true
+    b.TextColor3 = Color3.fromRGB(220,220,220)
+    b.BackgroundColor3 = Color3.fromRGB(40,40,55)
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+    return b
+end
+
+sideButton("Home")
+sideButton("Main")
+sideButton("Inventory")
+sideButton("Shop")
+sideButton("Misc")
+
+-- ================= CONTENT =================
 local content = Instance.new("Frame", main)
-content.Position = UDim2.new(0,0,0,45)
-content.Size = UDim2.new(1,0,1,-45)
+content.Position = UDim2.new(0,130,0,38)
+content.Size = UDim2.new(1,-130,1,-38)
 content.BackgroundTransparency = 1
 
-local layout = Instance.new("UIListLayout", content)
-layout.Padding = UDim.new(0,8)
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+local label = Instance.new("TextLabel", content)
+label.Size = UDim2.new(1,0,1,0)
+label.BackgroundTransparency = 1
+label.Text = "Content Area"
+label.Font = Enum.Font.Gotham
+label.TextScaled = true
+label.TextColor3 = Color3.fromRGB(200,200,200)
 
--- ===== MINIMIZE LOGIC =====
-local minimized = false
-minBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    content.Visible = not minimized
-    main.Size = minimized and UDim2.new(0,280,0,45) or UDim2.new(0,280,0,360)
-    minBtn.Text = minimized and "+" or "-"
+-- ================= MINIMIZED BUBBLE =================
+local bubble = Instance.new("TextButton", gui)
+bubble.Size = UDim2.new(0,55,0,55)
+bubble.Position = UDim2.new(0.05,0,0.6,0)
+bubble.Visible = false
+bubble.Text = "☾"
+bubble.Font = Enum.Font.GothamBold
+bubble.TextScaled = true
+bubble.TextColor3 = Color3.fromRGB(255,255,255)
+bubble.BackgroundColor3 = Color3.fromRGB(140,90,220)
+bubble.Active = true
+bubble.Draggable = true
+Instance.new("UICorner", bubble).CornerRadius = UDim.new(1,0)
+
+-- ================= LOGIC =================
+minimize.MouseButton1Click:Connect(function()
+    main.Visible = false
+    bubble.Visible = true
 end)
 
--- ===== TOGGLE MAKER =====
-local function toggleButton(text, onEnable, onDisable)
-    local btn = Instance.new("TextButton", content)
-    btn.Size = UDim2.new(0.9,0,0,38)
-    btn.Text = text.." : OFF"
-    btn.Font = Enum.Font.Gotham
-    btn.TextScaled = true
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.BackgroundColor3 = Color3.fromRGB(90,60,140)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
-
-    local state = false
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = text..(state and " : ON" or " : OFF")
-        btn.BackgroundColor3 = state and Color3.fromRGB(160,110,240) or Color3.fromRGB(90,60,140)
-        if state then onEnable() else onDisable() end
-    end)
-end
-
--- ===== DROPDOWN =====
-local function dropdown(titleText, options, callback)
-    local btn = Instance.new("TextButton", content)
-    btn.Size = UDim2.new(0.9,0,0,36)
-    btn.Font = Enum.Font.Gotham
-    btn.TextScaled = true
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.BackgroundColor3 = Color3.fromRGB(70,45,120)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
-
-    local index = 1
-    btn.Text = titleText..": "..options[index]
-
-    btn.MouseButton1Click:Connect(function()
-        index += 1
-        if index > #options then index = 1 end
-        btn.Text = titleText..": "..options[index]
-        callback(options[index])
-    end)
-end
-
--- ===== PLAYER FEATURES =====
-toggleButton("Speed", function()
-    humanoid.WalkSpeed = 60
-end, function()
-    humanoid.WalkSpeed = 16
+bubble.MouseButton1Click:Connect(function()
+    bubble.Visible = false
+    main.Visible = true
 end)
 
-toggleButton("Jump", function()
-    humanoid.JumpPower = 120
-end, function()
-    humanoid.JumpPower = 50
-end)
-
--- =================================================
--- ============ AUTO BUY SEED (STABLE) ==============
--- =================================================
-
-local buySeedRemote = ReplicatedStorage.GameEvents:WaitForChild("BuySeedStock")
-local autoBuySeed = false
-local selectedSeed = "Carrot"
-local seedPrice = 10
-
-dropdown("Seed", {"Carrot","Potato"}, function(v)
-    selectedSeed = v
-    seedPrice = (v == "Carrot") and 10 or 20
-end)
-
-toggleButton("Auto Buy Seed", function()
-    autoBuySeed = true
-    task.spawn(function()
-        while autoBuySeed do
-            pcall(function()
-                local coins = player:FindFirstChild("leaderstats")
-                    and player.leaderstats:FindFirstChild("Coins")
-                if coins and coins.Value >= seedPrice then
-                    buySeedRemote:FireServer("Shop", selectedSeed)
-                end
-            end)
-            task.wait(5) -- DELAY AMAN
-        end
-    end)
-end, function()
-    autoBuySeed = false
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
 end)

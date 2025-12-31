@@ -1,32 +1,39 @@
--- ELYSIUM HUB | V17 FINAL UI (TOGGLES FIXED)
+-- ELYSIUM HUB | V18 HATCHING UPDATE
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "ElysiumUI_V17"
+gui.Name = "ElysiumUI_V18"
 gui.ResetOnSpawn = false
 
 -- ================= GLOBAL FLAGS =================
 local Flags = {
     WalkSpeed = 16, InfJump = false,
-    -- Auto Plant
+    
+    -- MAIN: FARMING
     AutoPlant = false, SelectedSeed = "", PlantPos = "Player Location",
-    -- Auto Collect
     AutoCollect = false, SelectedCollect = "", SelectedMutation = "",
-    -- Auto Water
     AutoWater = false, SelectedWater = "",
-    -- Auto Shovel
     AutoShovel = false, ShovelFruit = "", ShovelPlant = "", ShovelSprinkler = "",
-    -- Auto Sell
-    AutoSellAll = false
+    AutoSellAll = false,
+
+    -- AUTO HATCH & PETS
+    AutoPlaceEgg = false, SelectedEggPlace = "Common Egg", EggPosition = "Random", EggAmount = "1",
+    AutoHatch = false, SelectedEggHatch = "Common Egg", HatchMaxWeight = "", HatchMaxAge = "", 
+    BlacklistPet = "", -- List item for blacklist
+    AutoSellPet = false, SelectedSellPet = "", DontSellPet = "", SellAge = "", SellWeight = ""
 }
+
+-- DUMMY DATA (Contoh List untuk Dropdown)
+local EggList = {"Common Egg", "Uncommon Egg", "Rare Egg", "Epic Egg", "Legendary Egg", "Mythic Egg"}
+local PetList = {"Cat", "Dog", "Bunny", "Bear", "Dragon", "Slime", "Titan"}
 
 -- ================= MAIN FRAME =================
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 580, 0, 450)
-main.Position = UDim2.new(0.5, -290, 0.5, -225)
+main.Size = UDim2.new(0, 580, 0, 480) -- Sedikit lebih tinggi untuk menu hatch
+main.Position = UDim2.new(0.5, -290, 0.5, -240)
 main.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 main.BackgroundTransparency = 0.15
 main.Active = true
@@ -45,7 +52,7 @@ local title = Instance.new("TextLabel", top)
 title.Size = UDim2.new(1, 0, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
 title.BackgroundTransparency = 1
-title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V17"
+title.Text = "ELYSIUM <font color='#FF4444'>HUB</font> | V18"
 title.RichText = true
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Font = Enum.Font.GothamBold
@@ -95,14 +102,17 @@ local function createPage(name)
     p.Size = UDim2.new(1, 0, 1, 0)
     p.BackgroundTransparency = 1
     p.Visible = false
-    p.ScrollBarThickness = 0
+    p.ScrollBarThickness = 2
+    p.ScrollBarImageColor3 = Color3.fromRGB(255, 68, 68)
     p.AutomaticCanvasSize = Enum.AutomaticSize.Y
     Instance.new("UIListLayout", p).Padding = UDim.new(0, 6)
     pages[name] = p
     return p
 end
 
--- ================= UI BUILDERS =================
+-- ================= UI BUILDERS (ADVANCED) =================
+
+-- 1. Main Header (Expandable Red)
 local function createSection(parent, name, defaultVisible)
     local sectionContainer = Instance.new("Frame", parent)
     sectionContainer.Size = UDim2.new(0.98, 0, 0, 0)
@@ -145,6 +155,7 @@ local function createSection(parent, name, defaultVisible)
     return content
 end
 
+-- 2. Standard Rows (Toggle, Search, Cycle, DualInput)
 local function createRow(parent, text, type, flag, options)
     local f = Instance.new("Frame", parent)
     f.Size = UDim2.new(0.98, 0, 0, 35)
@@ -178,12 +189,12 @@ local function createRow(parent, text, type, flag, options)
             TweenService:Create(dot, TweenInfo.new(0.2), {Position = Flags[flag] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}):Play()
             TweenService:Create(sw, TweenInfo.new(0.2), {BackgroundColor3 = Flags[flag] and Color3.fromRGB(255, 68, 68) or Color3.fromRGB(50, 50, 60)}):Play()
         end)
-    elseif type == "Search" then
+    elseif type == "Search" or type == "Input" then
         local input = Instance.new("TextBox", f)
         input.Size = UDim2.new(0, 120, 0, 24)
         input.Position = UDim2.new(1, -10, 0.5, -12)
         input.AnchorPoint = Vector2.new(1, 0)
-        input.PlaceholderText = "Search..."
+        input.PlaceholderText = options and options[1] or "Type..."
         input.Text = ""
         input.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
         input.TextColor3 = Color3.new(1, 1, 1)
@@ -206,14 +217,127 @@ local function createRow(parent, text, type, flag, options)
             Flags[flag] = options[idx]
             btn.Text = Flags[flag]
         end)
+    elseif type == "DualInput" then -- Special for Age/Weight
+        local box1 = Instance.new("TextBox", f)
+        box1.Size = UDim2.new(0, 55, 0, 24)
+        box1.Position = UDim2.new(1, -70, 0.5, -12)
+        box1.AnchorPoint = Vector2.new(1, 0)
+        box1.PlaceholderText = options[2] -- "Age"
+        box1.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        box1.TextColor3 = Color3.new(1, 1, 1)
+        Instance.new("UICorner", box1).CornerRadius = UDim.new(0, 4)
+        box1.FocusLost:Connect(function() Flags[flag[2]] = box1.Text end)
+
+        local box2 = Instance.new("TextBox", f)
+        box2.Size = UDim2.new(0, 55, 0, 24)
+        box2.Position = UDim2.new(1, -130, 0.5, -12) -- Sebelahnya
+        box2.AnchorPoint = Vector2.new(1, 0)
+        box2.PlaceholderText = options[1] -- "KG"
+        box2.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        box2.TextColor3 = Color3.new(1, 1, 1)
+        Instance.new("UICorner", box2).CornerRadius = UDim.new(0, 4)
+        box2.FocusLost:Connect(function() Flags[flag[1]] = box2.Text end)
     end
 end
 
--- ================= INITIALIZE PAGES =================
+-- 3. DROPDOWN (Expandable List with Search)
+local function createDropdown(parent, name, listItems, flag)
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(0.98, 0, 0, 35) -- Start height
+    container.AutomaticSize = Enum.AutomaticSize.Y
+    container.BackgroundTransparency = 1
+    
+    local header = Instance.new("TextButton", container)
+    header.Size = UDim2.new(1, 0, 0, 35)
+    header.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    header.BackgroundTransparency = 0.5
+    header.Text = ""
+    Instance.new("UICorner", header).CornerRadius = UDim.new(0, 6)
+
+    local lbl = Instance.new("TextLabel", header)
+    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 12, 0, 0)
+    lbl.Text = name
+    lbl.TextColor3 = Color3.fromRGB(210,210,210)
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.BackgroundTransparency = 1
+
+    local selectedLbl = Instance.new("TextLabel", header)
+    selectedLbl.Size = UDim2.new(0.4, 0, 1, 0)
+    selectedLbl.Position = UDim2.new(1, -35, 0, 0)
+    selectedLbl.AnchorPoint = Vector2.new(1,0)
+    selectedLbl.Text = "Select..."
+    selectedLbl.TextColor3 = Color3.fromRGB(255, 68, 68)
+    selectedLbl.Font = Enum.Font.Gotham
+    selectedLbl.TextXAlignment = Enum.TextXAlignment.Right
+    selectedLbl.BackgroundTransparency = 1
+
+    local arrow = Instance.new("TextLabel", header)
+    arrow.Size = UDim2.new(0, 30, 1, 0)
+    arrow.Position = UDim2.new(1, 0, 0, 0)
+    arrow.AnchorPoint = Vector2.new(1,0)
+    arrow.Text = "▼"
+    arrow.TextColor3 = Color3.new(1,1,1)
+    arrow.BackgroundTransparency = 1
+
+    -- Dropdown Content
+    local content = Instance.new("Frame", container)
+    content.Size = UDim2.new(1, 0, 0, 150)
+    content.Position = UDim2.new(0, 0, 0, 40)
+    content.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    content.Visible = false
+    Instance.new("UICorner", content)
+
+    local search = Instance.new("TextBox", content)
+    search.Size = UDim2.new(1, -10, 0, 25)
+    search.Position = UDim2.new(0, 5, 0, 5)
+    search.PlaceholderText = "Search item..."
+    search.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    search.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", search)
+
+    local scroll = Instance.new("ScrollingFrame", content)
+    scroll.Size = UDim2.new(1, -10, 1, -35)
+    scroll.Position = UDim2.new(0, 5, 0, 35)
+    scroll.BackgroundTransparency = 1
+    scroll.ScrollBarThickness = 2
+    local listLayout = Instance.new("UIListLayout", scroll); listLayout.Padding = UDim.new(0, 2)
+
+    -- Populate List
+    local function refreshList(filter)
+        for _, v in pairs(scroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+        for _, item in pairs(listItems) do
+            if filter == "" or string.find(string.lower(item), string.lower(filter)) then
+                local b = Instance.new("TextButton", scroll)
+                b.Size = UDim2.new(1, 0, 0, 25)
+                b.BackgroundTransparency = 1
+                b.Text = item
+                b.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+                b.Font = Enum.Font.Gotham
+                b.MouseButton1Click:Connect(function()
+                    Flags[flag] = item
+                    selectedLbl.Text = item
+                    content.Visible = false
+                end)
+            end
+        end
+    end
+    refreshList("")
+    search:GetPropertyChangedSignal("Text"):Connect(function() refreshList(search.Text) end)
+
+    header.MouseButton1Click:Connect(function()
+        content.Visible = not content.Visible
+        arrow.Text = content.Visible and "▲" or "▼"
+    end)
+end
+
+-- ================= PAGE INITIALIZATION =================
 local homePage = createPage("Home")
 local mainPage = createPage("Main")
+local hatchPage = createPage("Auto Hatch") -- HALAMAN BARU
 
--- HOME PAGE
+-- --- HOME PAGE ---
 local lp = createSection(homePage, "Local Player", true)
 createRow(lp, "Infinite Jump", "Toggle", "InfJump")
 local wsRow = Instance.new("Frame", lp); wsRow.Size = UDim2.new(0.98,0,0,35); wsRow.BackgroundTransparency = 1
@@ -224,7 +348,7 @@ local function addWS(t, x, d)
 end
 addWS("+", -34, 10); addWS("-", -65, -10)
 
--- MAIN PAGE (Sesuai Permintaan)
+-- --- MAIN PAGE (FARMING) ---
 local plantS = createSection(mainPage, "Auto Plant Seed", true)
 createRow(plantS, "Plant Select", "Search", "SelectedSeed")
 createRow(plantS, "Plant Position", "Cycle", "PlantPos", {"Player Location", "Random Location", "Good Location"})
@@ -233,22 +357,46 @@ createRow(plantS, "Enable Auto Plant", "Toggle", "AutoPlant")
 local collectS = createSection(mainPage, "Auto Collect", false)
 createRow(collectS, "Search Plant", "Search", "SelectedCollect")
 createRow(collectS, "Search Mutation", "Search", "SelectedMutation")
-createRow(collectS, "Enable Auto Collect", "Toggle", "AutoCollect") -- TAMBAHAN TOGGLE
+createRow(collectS, "Enable Auto Collect", "Toggle", "AutoCollect")
 
 local waterS = createSection(mainPage, "Auto Water", false)
 createRow(waterS, "Search Target", "Search", "SelectedWater")
-createRow(waterS, "Enable Auto Water", "Toggle", "AutoWater") -- TAMBAHAN TOGGLE
+createRow(waterS, "Enable Auto Water", "Toggle", "AutoWater")
 
 local shovelS = createSection(mainPage, "Auto Shovel", false)
 createRow(shovelS, "Search Fruit", "Search", "ShovelFruit")
 createRow(shovelS, "Search Plant", "Search", "ShovelPlant")
 createRow(shovelS, "Search Sprinkler", "Search", "ShovelSprinkler")
-createRow(shovelS, "Enable Auto Shovel", "Toggle", "AutoShovel") -- TAMBAHAN TOGGLE
+createRow(shovelS, "Enable Auto Shovel", "Toggle", "AutoShovel")
 
 local sellS = createSection(mainPage, "Auto Sell Plant", false)
 createRow(sellS, "Auto Sell All", "Toggle", "AutoSellAll")
 
--- SIDEBAR BUTTONS
+-- --- AUTO HATCH PAGE (FITUR BARU) ---
+
+-- 1. AUTO PLACE EGG
+local placeEggS = createSection(hatchPage, "Auto Place Egg", true)
+createDropdown(placeEggS, "Select Egg", EggList, "SelectedEggPlace") -- Dropdown List
+createRow(placeEggS, "Position", "Cycle", "EggPosition", {"Random", "Good Position"})
+createRow(placeEggS, "Amount (Ex: 10)", "Input", "EggAmount", {"Amount..."}) -- Chat box isi sendiri
+createRow(placeEggS, "Enable Place Egg", "Toggle", "AutoPlaceEgg")
+
+-- 2. AUTO HATCH EGG
+local hatchEggS = createSection(hatchPage, "Auto Hatch Egg", false)
+createDropdown(hatchEggS, "Select Egg", EggList, "SelectedEggHatch")
+createRow(hatchEggS, "Don't Hatch", "DualInput", {"HatchMaxWeight", "HatchMaxAge"}, {"KG", "Age"}) -- 2 Chat box (KG & Age)
+createDropdown(hatchEggS, "Blacklist Pet", PetList, "BlacklistPet") -- List Box Blacklist
+createRow(hatchEggS, "Enable Auto Hatch", "Toggle", "AutoHatch")
+
+-- 3. AUTO SELL PET
+local sellPetS = createSection(hatchPage, "Auto Sell Pet", false)
+createDropdown(sellPetS, "Select Pet to Sell", PetList, "SelectedSellPet")
+createDropdown(sellPetS, "Don't Sell Pet", PetList, "DontSellPet")
+createRow(sellPetS, "Threshold", "DualInput", {"SellWeight", "SellAge"}, {"KG", "Age"}) -- 2 Chat box
+createRow(sellPetS, "Enable Sell Pet", "Toggle", "AutoSellPet")
+
+
+-- ================= SIDEBAR BUTTONS =================
 local function sideBtn(name, icon)
     local b = Instance.new("TextButton", side)
     b.Size = UDim2.new(1, 0, 0, 40)
@@ -265,7 +413,7 @@ local function sideBtn(name, icon)
 end
 sideBtn("Home", "🏠"); sideBtn("Main", "🔥"); sideBtn("Auto Hatch", "🥚"); sideBtn("Shop", "🛒"); sideBtn("Inventory", "📦"); sideBtn("Misc", "⚙️"); sideBtn("Webhook", "🔗")
 
--- CORE LOOP
+-- ================= CORE LOOP =================
 task.spawn(function()
     while task.wait(0.05) do
         pcall(function() player.Character.Humanoid.WalkSpeed = Flags.WalkSpeed end)

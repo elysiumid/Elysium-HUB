@@ -1,117 +1,95 @@
--- GAME CHECK (Grow a Garden only)
-local GROW_A_GARDEN_ID = game.PlaceId  -- sementara biarkan ini
+-- ELYSIUM HUB UI BASE (DELTA SAFE)
 
--- notif helper
-local function notify(txt)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification",{
-            Title = "Elysium HUB",
-            Text = txt,
-            Duration = 4
-        })
-    end)
-end
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
-notify("Elysium HUB loaded")
-
+-- NOTIF TEST
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification",{
         Title = "Elysium HUB",
-        Text = "Script berhasil dijalankan",
-        Duration = 4
+        Text = "UI Loaded",
+        Duration = 3
     })
 end)
 
--- PERSONAL HUB (DELTA SAFE)
--- main.lua
-
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
--- wait character
-local function getHumanoid()
-    local char = player.Character or player.CharacterAdded:Wait()
-    return char:WaitForChild("Humanoid")
-end
-
-local humanoid = getHumanoid()
-
--- GUI
+-- ===== GUI =====
 local gui = Instance.new("ScreenGui")
-gui.Name = "PersonalHub"
+gui.Name = "ElysiumHub"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 220, 0, 160)
-frame.Position = UDim2.new(0.05, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-frame.Active = true
-frame.Draggable = true
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 240, 0, 220)
+main.Position = UDim2.new(0.05, 0, 0.3, 0)
+main.BackgroundColor3 = Color3.fromRGB(30,30,30)
+main.Active = true
+main.Draggable = true
 
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 30)
+local corner = Instance.new("UICorner", main)
+corner.CornerRadius = UDim.new(0,12)
+
+-- TITLE
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1, 0, 0, 35)
 title.BackgroundTransparency = 1
-title.Text = "PERSONAL HUB"
-title.TextColor3 = Color3.new(1,1,1)
+title.Text = "ELYSIUM HUB"
+title.TextColor3 = Color3.fromRGB(255,255,255)
 title.TextScaled = true
+title.Font = Enum.Font.GothamBold
 
--- SPEED
-local speedBtn = Instance.new("TextButton", frame)
-speedBtn.Size = UDim2.new(0.9, 0, 0, 35)
-speedBtn.Position = UDim2.new(0.05, 0, 0.25, 0)
-speedBtn.Text = "Speed ON"
-speedBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-speedBtn.TextColor3 = Color3.new(1,1,1)
+-- CONTAINER
+local list = Instance.new("UIListLayout", main)
+list.Padding = UDim.new(0,8)
+list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+list.VerticalAlignment = Enum.VerticalAlignment.Top
+list.Padding = UDim.new(0,8)
+list.Parent = main
 
-local speedOn = false
-speedBtn.MouseButton1Click:Connect(function()
-    speedOn = not speedOn
-    humanoid.WalkSpeed = speedOn and 60 or 16
-    speedBtn.Text = speedOn and "Speed OFF" or "Speed ON"
+-- SPACER
+local spacer = Instance.new("Frame", main)
+spacer.Size = UDim2.new(1,0,0,40)
+spacer.BackgroundTransparency = 1
+
+-- ===== TOGGLE MAKER =====
+local function createToggle(text, callback)
+    local btn = Instance.new("TextButton", main)
+    btn.Size = UDim2.new(0.9,0,0,40)
+    btn.Text = text .. ": OFF"
+    btn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.Gotham
+    btn.TextScaled = true
+
+    local c = Instance.new("UICorner", btn)
+    c.CornerRadius = UDim.new(0,10)
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text .. (state and ": ON" or ": OFF")
+        btn.BackgroundColor3 = state and Color3.fromRGB(0,170,120) or Color3.fromRGB(60,60,60)
+        callback(state)
+    end)
+end
+
+-- ===== FEATURE STATES =====
+local AutoHarvest = false
+local AutoPlant = false
+
+-- ===== TOGGLES =====
+createToggle("Auto Harvest", function(v)
+    AutoHarvest = v
 end)
 
--- JUMP
-local jumpBtn = Instance.new("TextButton", frame)
-jumpBtn.Size = UDim2.new(0.9, 0, 0, 35)
-jumpBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
-jumpBtn.Text = "Jump ON"
-jumpBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-jumpBtn.TextColor3 = Color3.new(1,1,1)
-
-local jumpOn = false
-jumpBtn.MouseButton1Click:Connect(function()
-    jumpOn = not jumpOn
-    humanoid.JumpPower = jumpOn and 120 or 50
-    jumpBtn.Text = jumpOn and "Jump OFF" or "Jump ON"
+createToggle("Auto Plant", function(v)
+    AutoPlant = v
 end)
 
--- respawn fix
-player.CharacterAdded:Connect(function()
-    humanoid = getHumanoid()
-end)
-
--- AUTO HARVEST (Grow a Garden)
-
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
-local autoHarvest = true
-
-task.spawn(function()
-    while task.wait(1) do
-        if not autoHarvest then continue end
-
-        for _,v in pairs(workspace:GetDescendants()) do
-            if v:IsA("ProximityPrompt") then
-                if string.find(v.Name:lower(), "harvest") then
-                    pcall(function()
-                        v:InputHoldBegin()
-                        task.wait(0.1)
-                        v:InputHoldEnd()
-                    end)
-                end
-            end
-        end
-    end
-end)
+-- INFO
+local info = Instance.new("TextLabel", main)
+info.Size = UDim2.new(0.9,0,0,30)
+info.BackgroundTransparency = 1
+info.Text = "Grow a Garden"
+info.TextColor3 = Color3.fromRGB(180,180,180)
+info.Font = Enum.Font.Gotham
+info.TextScaled = true

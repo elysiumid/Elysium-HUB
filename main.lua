@@ -1,3 +1,11 @@
+pcall(function()
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "Elysium HUB",
+        Text = "Script berhasil dijalankan",
+        Duration = 4
+    })
+end)
+
 -- PERSONAL HUB (DELTA SAFE)
 -- main.lua
 
